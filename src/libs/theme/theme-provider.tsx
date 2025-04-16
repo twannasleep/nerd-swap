@@ -6,9 +6,14 @@ import { Notifications } from '@mantine/notifications';
 import { cssVariablesResolver, theme } from '.';
 
 export function ThemeProvider({ children }: PropsWithChildren) {
+  // Use computed color scheme
+  const mantineTheme = {
+    ...theme,
+  };
+
   return (
     <MantineProvider
-      theme={theme}
+      theme={mantineTheme}
       defaultColorScheme="dark"
       cssVariablesResolver={cssVariablesResolver}
     >

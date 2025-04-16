@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { cookies } from 'next/headers';
 import { ColorSchemeScript, mantineHtmlProps } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { RootProvider } from '@/libs/providers/RootProvider';
@@ -20,18 +21,21 @@ export const metadata: Metadata = {
   description: 'Swap your NFTs',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const appKitCookies = cookieStore.get('wagmi.store')?.value ?? null;
+
   return (
     <html {...mantineHtmlProps}>
       <head>
         <ColorSchemeScript defaultColorScheme="dark" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <RootProvider>{children}</RootProvider>
+        <RootProvider cookies={appKitCookies}>{children}</RootProvider>
       </body>
     </html>
   );

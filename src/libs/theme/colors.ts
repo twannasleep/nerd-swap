@@ -1,20 +1,20 @@
 import type { MantineColorsTuple } from '@mantine/core';
 
-// Custom primary color palette based on #FF990A
+// Custom primary color palette for Uniswap-like interface - pink/purple
 export const primaryColor: MantineColorsTuple = [
-  '#FFF6E5', // 0 - Lightest (background tint)
-  '#FFEACC', // 1
-  '#FFDB99', // 2
-  '#FFCC66', // 3
-  '#FFBD33', // 4
-  '#FFAE00', // 5
-  '#FF990A', // 6 - Base color
-  '#E68700', // 7
-  '#CC7700', // 8
-  '#B36600', // 9 - Darkest
+  '#FEF6FF', // 0 - Lightest (background tint)
+  '#FAECFE', // 1
+  '#F5D9FD', // 2
+  '#F0C5FB', // 3
+  '#E9B1F9', // 4
+  '#E29DF8', // 5
+  '#DB89F6', // 6 - Base color (similar to Uniswap pink)
+  '#C76FE5', // 7
+  '#B356D4', // 8
+  '#9E3DC3', // 9 - Darkest
 ];
 
-// Dark color palette optimized for #FF990A primary color
+// Dark color palette optimized for crypto interfaces
 export const darkColor: MantineColorsTuple = [
   '#636363', // 0 - Lightest
   '#575757', // 1
@@ -23,26 +23,26 @@ export const darkColor: MantineColorsTuple = [
   '#333333', // 4
   '#282828', // 5
   '#212121', // 6
-  '#1A1A1A', // 7 - Base color
-  '#141414', // 8
-  '#0A0A0A', // 9 - Darkest
+  '#191A1F', // 7 - Base color (Uniswap-like dark)
+  '#131519', // 8
+  '#0A0A0F', // 9 - Darkest
 ];
 
-// Complementary blue accent color
+// Complementary accent color (Uniswap secondary blue)
 export const accentColor: MantineColorsTuple = [
-  '#E6F4FF', // 0 - Lightest blue
-  '#CCE9FF', // 1
-  '#99D3FF', // 2
-  '#66BDFF', // 3
-  '#33A7FF', // 4
-  '#0091FF', // 5 - Base color
-  '#0077E6', // 6
-  '#0066CC', // 7
-  '#0055B3', // 8
-  '#004499', // 9 - Darkest
+  '#E6F1FF', // 0 - Lightest blue
+  '#CCE3FF', // 1
+  '#99C7FF', // 2
+  '#66ABFF', // 3
+  '#338FFF', // 4
+  '#0073FF', // 5 - Base color
+  '#006AE6', // 6
+  '#005CCC', // 7
+  '#004EB3', // 8
+  '#004099', // 9 - Darkest
 ];
 
-// Success green that works with orange primary
+// Success green that works with purple primary
 export const successColor: MantineColorsTuple = [
   '#E8F8F0', // 0 - Lightest green
   '#D1F1E0', // 1
@@ -56,7 +56,7 @@ export const successColor: MantineColorsTuple = [
   '#0E6038', // 9 - Darkest
 ];
 
-// Error red that works with orange primary
+// Error red that works with purple primary
 export const errorColor: MantineColorsTuple = [
   '#FFF0F0', // 0 - Lightest red
   '#FFD6D6', // 1
@@ -84,7 +84,7 @@ export const neutralColor: MantineColorsTuple = [
   '#171717', // 9 - Darkest
 ];
 
-// Warm accent color that complements the orange primary
+// Warm accent color (Uniswap-like)
 export const warmColor: MantineColorsTuple = [
   '#FFF1E5', // 0 - Lightest
   '#FFE2CC', // 1
