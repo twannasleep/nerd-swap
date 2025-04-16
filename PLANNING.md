@@ -6,36 +6,41 @@ A decentralized application (dApp) frontend that mimics a Uniswap V2 token swap 
 
 ## Tech Stack
 
-- **Framework**: Next.js 15.3.0
-- **Language**: TypeScript
-- **UI**: TailwindCSS
+- **Framework**: Next.js 15.3.0 ✓
+- **Language**: TypeScript ✓
+- **UI**: TailwindCSS ✓ + Chakra UI ✓
 - **Web3**: TBD (wagmi/rainbowkit + viem/ethers.js)
-- **Testing**: Jest + React Testing Library
+- **Testing**: Jest + React Testing Library ✓
 
-## Project Structure
+## Current Structure
 
 ```
 src/
-├── app/                        # Next.js app structure
-├── features/                   # Feature-based organization
-│   ├── web3/                   # Web3 integration feature
-│   ├── tokens/                 # Token management feature
-│   ├── swap/                   # Swap functionality feature
-│   └── transactions/           # Transaction handling feature
-├── components/                 # Shared UI components
-├── utils/                      # Shared utilities
-└── providers/                  # App-wide providers
+├── app/                        # Next.js app structure ✓
+├── libs/                       # Shared libraries
+│   └── theme/                  # Theme configuration and providers ✓
+├── features/                   # Feature-based organization (empty)
+│   ├── web3/                   # Web3 integration feature (not started)
+│   ├── tokens/                 # Token management feature (not started)
+│   ├── swap/                   # Swap functionality feature (not started)
+│   └── transactions/           # Transaction handling feature (not started)
+├── utils/                      # Shared utilities (empty)
+│   └── tests/                  # Test utilities ✓
+└── providers/                  # App-wide providers (not started)
 ```
 
 ## Implementation Plan
 
-### Phase 1: Project Setup [ ]
+### Phase 1: Project Setup [✓]
 
+- [✓] Initialize Next.js project with TypeScript
+- [✓] Configure TailwindCSS
+- [✓] Set up project structure
+- [✓] Set up testing environment with Jest
+- [✓] Set up Chakra UI integration
 - [ ] Initialize Web3 dependencies
   - [ ] Install and configure wagmi/rainbowkit
   - [ ] Install and configure viem/ethers.js
-- [ ] Configure TailwindCSS
-- [ ] Set up project structure
 - [ ] Configure BNB Testnet RPC
 
 ### Phase 2: Web3 Integration [ ]
@@ -87,7 +92,7 @@ src/
 - [ ] Add loading states
 - [ ] Create error messages
 - [ ] Add success notifications
-- [ ] Implement dark/light mode (optional)
+- [✓] Implement dark/light mode
 
 ### Phase 7: Bonus Features [ ]
 
@@ -101,20 +106,10 @@ src/
 
 ### Phase 8: Documentation & Deployment [ ]
 
-- [ ] Create detailed README
+- [✓] Create basic README
 - [ ] Document setup instructions
 - [ ] Add code comments
 - [ ] Deploy to Vercel/Netlify (optional)
-
-## Testing Checklist
-
-- [ ] Wallet connection
-- [ ] Token selection
-- [ ] Price calculation
-- [ ] Swap execution
-- [ ] Transaction status
-- [ ] Error handling
-- [ ] Responsive design
 
 ## Dependencies to Install
 
@@ -122,11 +117,11 @@ src/
 # Web3
 npm install wagmi viem @rainbow-me/rainbowkit
 
-# UI
-npm install @headlessui/react @heroicons/react
-
-# Testing
-npm install @testing-library/react @testing-library/jest-dom
+# UI - Already installed:
+# - @chakra-ui/react
+# - @emotion/react
+# - react-icons
+# - next-themes
 ```
 
 ## Constants
@@ -145,17 +140,27 @@ const DEFAULT_SLIPPAGE = 0.5; // 0.5%
 
 ## Progress Tracking
 
-- [ ] Phase 1: Project Setup
+- [✓] Basic project setup with Next.js, TypeScript, and Chakra UI
+- [✓] Testing environment with Jest and React Testing Library
+- [✓] Theme configuration with dark/light mode support
 - [ ] Phase 2: Web3 Integration
 - [ ] Phase 3: Token Management
 - [ ] Phase 4: Swap Form Implementation
 - [ ] Phase 5: Transaction Handling
-- [ ] Phase 6: UI/UX Refinement
+- [ ] Phase 6: UI/UX Refinement (partially complete)
 - [ ] Phase 7: Bonus Features
-- [ ] Phase 8: Documentation & Deployment
+- [ ] Phase 8: Documentation & Deployment (partially complete)
+
+## Next Steps
+
+1. Install and configure Web3 dependencies (wagmi/rainbowkit and viem/ethers.js)
+2. Set up BNB Testnet RPC configuration
+3. Implement Web3 provider and wallet connection
+4. Begin implementing the token management feature
 
 ## Notes
 
-- Keep track of any issues or blockers
-- Document important decisions
-- Update this file as progress is made
+- Project has a working base with Next.js, TypeScript, and Chakra UI
+- Dark/light mode functionality is already implemented
+- Consider adjusting the UI components to match Uniswap V2 style while leveraging Chakra UI
+- The features directory structure needs to be populated with the planned features

@@ -12,12 +12,11 @@
     "^next(.*)$",
     "<THIRD_PARTY_MODULES>",
     "^@/components/(.*)$",
-    "^@/lib/(.*)$",
+    "^@/libs/(.*)$",
     "^@/styles/(.*)$",
     "^@/(.*)$",
     "^[./]"
   ],
-  "importOrderSeparation": true,
   "importOrderSortSpecifiers": true,
   "tailwindFunctions": ["cn", "clsx", "cva"]
 }

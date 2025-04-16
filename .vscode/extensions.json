@@ -4,7 +4,6 @@
     "esbenp.prettier-vscode",
     "bradlc.vscode-tailwindcss",
     "ms-vscode.vscode-typescript-next",
-    "github.copilot",
     "github.vscode-github-actions",
     "ms-azuretools.vscode-docker",
     "mikestead.dotenv",
