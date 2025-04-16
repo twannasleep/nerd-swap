@@ -48,6 +48,7 @@ const eslintConfig = [
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-empty-object-type': 'off',
     },
   },
   {

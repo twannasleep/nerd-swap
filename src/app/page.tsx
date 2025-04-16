@@ -1,83 +1,97 @@
-import Image from 'next/image';
+'use client';
+
+import { Box, Button, Container, Heading, Icon, SimpleGrid, Stack, Text } from '@chakra-ui/react';
+import { FiCode, FiDatabase, FiLayers } from 'react-icons/fi';
+import { useColorMode } from '@/libs/theme/color-mode';
 
 export default function Home() {
+  const { colorMode } = useColorMode();
   return (
-    <div className="grid min-h-screen grid-rows-[20px_1fr_20px] items-center justify-items-center gap-16 p-8 pb-20 font-[family-name:var(--font-geist-sans)] sm:p-20">
-      <main className="row-start-2 flex flex-col items-center gap-[32px] sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-center font-[family-name:var(--font-geist-mono)] text-sm/6 sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{' '}
-            <code className="rounded bg-black/[.05] px-1 py-0.5 font-[family-name:var(--font-geist-mono)] font-semibold dark:bg-white/[.06]">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">Save and see your changes instantly.</li>
-        </ol>
+    <Box>
+      {/* Hero Section */}
+      <Container maxW={'7xl'} py={16}>
+        <Stack align={'center'} direction={{ base: 'column', md: 'row' }}>
+          <Stack flex={1} gap={{ base: 5, md: 10 }}>
+            <Heading
+              lineHeight={1.1}
+              fontWeight={600}
+              fontSize={{ base: '3xl', sm: '4xl', lg: '6xl' }}
+            >
+              <Text as={'span'} position={'relative'} color={'blue.400'}>
+                Modern Web App
+              </Text>
+              <br />
+              <Text as={'span'} color={'blue.400'}>
+                Made Simple
+              </Text>
+            </Heading>
+            <Text color={'gray.500'}>
+              Welcome to our demo page built with Chakra UI and Next.js. This showcase demonstrates
+              the power and flexibility of modern web development tools.
+            </Text>
+            <Stack gap={{ base: 4, sm: 6 }} direction={{ base: 'column', sm: 'row' }}>
+              <Button
+                rounded={'full'}
+                size={'lg'}
+                fontWeight={'normal'}
+                px={6}
+                colorScheme={'blue'}
+                bg={'blue.400'}
+                _hover={{ bg: 'blue.500' }}
+              >
+                Get Started
+              </Button>
+              <Button rounded={'full'} size={'lg'} fontWeight={'normal'} px={6}>
+                Learn More
+              </Button>
+            </Stack>
+          </Stack>
+        </Stack>
 
-        <div className="flex flex-col items-center gap-4 sm:flex-row">
-          <a
-            className="bg-foreground text-background flex h-10 items-center justify-center gap-2 rounded-full border border-solid border-transparent px-4 text-sm font-medium transition-colors hover:bg-[#383838] sm:h-12 sm:w-auto sm:px-5 sm:text-base dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="flex h-10 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-4 text-sm font-medium transition-colors hover:border-transparent hover:bg-[#f2f2f2] sm:h-12 sm:w-auto sm:px-5 sm:text-base md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex flex-wrap items-center justify-center gap-[24px]">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="/file.svg" alt="File icon" width={16} height={16} />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="/window.svg" alt="Window icon" width={16} height={16} />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="/globe.svg" alt="Globe icon" width={16} height={16} />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        {/* Feature Section */}
+        <Box py={20}>
+          <SimpleGrid columns={{ base: 1, md: 3 }} gap={10}>
+            {features.map((feature, index) => (
+              <Box
+                key={index}
+                p={6}
+                rounded={'xl'}
+                borderWidth={1}
+                borderColor={colorMode === 'dark' ? 'gray.700' : 'gray.200'}
+                _hover={{
+                  transform: 'translateY(-5px)',
+                  transition: 'all 0.3s ease',
+                  shadow: 'lg',
+                }}
+              >
+                <Icon as={feature.icon} w={10} h={10} mb={4} color={'blue.400'} />
+                <Heading size="md" mb={4}>
+                  {feature.title}
+                </Heading>
+                <Text color={'gray.500'}>{feature.description}</Text>
+              </Box>
+            ))}
+          </SimpleGrid>
+        </Box>
+      </Container>
+    </Box>
   );
 }
+
+const features = [
+  {
+    title: 'Modern Stack',
+    description: 'Built with Next.js and Chakra UI for a modern development experience.',
+    icon: FiLayers,
+  },
+  {
+    title: 'Responsive Design',
+    description: 'Fully responsive components that look great on any device.',
+    icon: FiCode,
+  },
+  {
+    title: 'Scalable Architecture',
+    description: 'Organized and maintainable code structure for scaling your application.',
+    icon: FiDatabase,
+  },
+];
