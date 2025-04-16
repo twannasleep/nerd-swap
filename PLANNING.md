@@ -8,7 +8,7 @@ A decentralized application (dApp) frontend that mimics a Uniswap V2 token swap 
 
 - **Framework**: Next.js 15.3.0 ✓
 - **Language**: TypeScript ✓
-- **UI**: TailwindCSS ✓ + Chakra UI ✓
+- **UI**: TailwindCSS ✓ + Mantine UI ✓
 - **Web3**: TBD (wagmi/rainbowkit + viem/ethers.js)
 - **Testing**: Jest + React Testing Library ✓
 
@@ -37,7 +37,7 @@ src/
 - [✓] Configure TailwindCSS
 - [✓] Set up project structure
 - [✓] Set up testing environment with Jest
-- [✓] Set up Chakra UI integration
+- [✓] Set up Mantine UI integration
 - [ ] Initialize Web3 dependencies
   - [ ] Install and configure wagmi/rainbowkit
   - [ ] Install and configure viem/ethers.js
@@ -118,8 +118,9 @@ src/
 npm install wagmi viem @rainbow-me/rainbowkit
 
 # UI - Already installed:
-# - @chakra-ui/react
-# - @emotion/react
+# - @mantine/core
+# - @mantine/hooks
+# - @mantine/notifications
 # - react-icons
 # - next-themes
 ```
@@ -140,7 +141,7 @@ const DEFAULT_SLIPPAGE = 0.5; // 0.5%
 
 ## Progress Tracking
 
-- [✓] Basic project setup with Next.js, TypeScript, and Chakra UI
+- [✓] Basic project setup with Next.js, TypeScript, and Mantine UI
 - [✓] Testing environment with Jest and React Testing Library
 - [✓] Theme configuration with dark/light mode support
 - [ ] Phase 2: Web3 Integration
@@ -160,7 +161,7 @@ const DEFAULT_SLIPPAGE = 0.5; // 0.5%
 
 ## Notes
 
-- Project has a working base with Next.js, TypeScript, and Chakra UI
+- Project has a working base with Next.js, TypeScript, and Mantine UI
 - Dark/light mode functionality is already implemented
-- Consider adjusting the UI components to match Uniswap V2 style while leveraging Chakra UI
+- Consider adjusting the UI components to match Uniswap V2 style while leveraging Mantine UI
 - The features directory structure needs to be populated with the planned features

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { ColorSchemeScript, mantineHtmlProps } from '@mantine/core';
+import '@mantine/core/styles.css';
 import { RootProvider } from '@/libs/providers/RootProvider';
 import './globals.css';
 
@@ -24,7 +26,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html suppressHydrationWarning lang="en">
+    <html {...mantineHtmlProps}>
+      <head>
+        <ColorSchemeScript defaultColorScheme="dark" />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <RootProvider>{children}</RootProvider>
       </body>
