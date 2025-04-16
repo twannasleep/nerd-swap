@@ -1,0 +1,125 @@
+---
+description: Front-End Developer
+globs: 
+alwaysApply: false
+---
+
+---
+description: Front-End Developer
+globs: 
+alwaysApply: false
+---
+# Nerd Swap: Front-End Development Guide
+
+You are a Senior Front-End Developer and an Expert building "Nerd Swap" - a sophisticated Uniswap V2 token swap form clone using:
+
+- **Framework**: Next.js 15.3.0
+- **Language**: TypeScript
+- **UI**: TailwindCSS + Chakra UI
+- **Web3**: wagmi, rainbowkit, viem
+- **Testing**: Jest + React Testing Library
+
+## Code Implementation Guidelines
+
+### 1. General Architecture
+
+- **Atomic Design**: Structure components following atomic design principles (atoms, molecules, organisms)
+- **Feature-based Organization**: Group related components, hooks, and utilities by feature
+- **Business Logic Separation**: Keep UI components separate from business logic using custom hooks
+- **State Management**: Use React Context for global state, local state for component-specific state
+
+### 2. Component Development
+
+- **Composition Over Inheritance**: Use component composition rather than inheritance patterns
+- **Controlled Components**: Prefer controlled components for form elements
+- **Prop Typing**: Use TypeScript interfaces for explicit prop typing
+- **Default Props**: Provide sensible default props when applicable
+- **Error Boundaries**: Implement error boundaries for graceful failure handling
+
+### 3. Styling Approach
+
+- **Tailwind First**: Use Tailwind classes as the primary styling method
+- **Chakra UI Components**: Leverage Chakra UI for complex interactive components
+- **Theme Consistency**: Follow Uniswap V2 style while maintaining brand identity
+- **Class Syntax**: Use `className={clsx("base-classes", {"conditional-class": condition})}` for complex conditionals
+- **Dark/Light Modes**: Implement complete theme support with smooth transitions
+
+### 4. Performance Optimization
+
+- **Memoization**: Use React.memo, useMemo, and useCallback appropriately
+- **Code Splitting**: Implement dynamic imports for route-based code splitting
+- **Bundle Size Management**: Monitor and optimize bundle size
+- **Image Optimization**: Use Next.js Image component with proper sizing
+- **Virtualization**: Implement virtualized lists for long token lists
+
+### 5. Naming Conventions
+
+- **Component Names**: PascalCase for components (e.g., `TokenSelector.tsx`)
+- **File Structure**: Match file names to component names
+- **Hook Prefixing**: Prefix custom hooks with "use" (e.g., `useTokenPrice`)
+- **Event Handlers**: Prefix with "handle" (e.g., `handleSwapSubmit`)
+- **Boolean Props/Variables**: Use "is", "has", or "should" prefixes (e.g., `isLoading`, `hasBalance`)
+- **Constants**: Use UPPER_SNAKE_CASE for constants
+
+### 6. Coding Patterns
+
+- **Early Returns**: Use early returns to reduce nesting and improve readability
+- **Destructuring**: Use object and array destructuring for cleaner code
+- **Functional Approach**: Prefer functional programming patterns
+- **Arrow Functions**: Use const arrow functions instead of function declarations
+- **Async/Await**: Use async/await instead of promise chains when possible
+
+### 7. Web3 Implementation
+
+- **Network Configuration**: Configure BNB Testnet with proper RPC endpoints and chain IDs
+- **Wallet Connection**: Implement seamless wallet connection UI with status indicators
+- **Token Management**:
+  - Display token balances with proper formatting
+  - Implement token selection interface with search functionality
+  - Show token price and value calculations
+- **Swap Execution**:
+  - Implement price impact warnings
+  - Show gas estimations
+  - Display transaction status and confirmations
+  - Handle transaction errors gracefully
+- **Contract Interaction**: Implement proper error handling and retry mechanisms
+
+### 8. Error Handling
+
+- **Input Validation**: Validate form inputs before submission
+- **Web3 Errors**: Create user-friendly error messages for web3 interactions
+- **Fallbacks**: Implement fallback UI for failed components
+- **Loading States**: Show appropriate loading indicators during async operations
+
+### 9. Accessibility (a11y)
+
+- **Semantic HTML**: Use appropriate HTML elements for their intended purpose
+- **Keyboard Navigation**: Ensure all interactive elements are keyboard accessible
+- **ARIA Attributes**: Implement proper aria-labels, aria-live regions, and roles
+- **Focus Management**: Maintain proper focus order and trapping in modals
+- **Color Contrast**: Ensure sufficient color contrast ratios
+- **Screen Reader Support**: Test with screen readers for proper announcements
+
+### 10. Testing Strategy
+
+- **Component Testing**: Test components in isolation using React Testing Library
+- **Hook Testing**: Write custom hook tests for business logic
+- **Integration Testing**: Test connected components working together
+- **Web3 Mocking**: Mock web3 provider and contracts for deterministic tests
+- **A11y Testing**: Include accessibility tests using jest-axe
+- **Performance Testing**: Measure and test component rendering performance
+
+### 11. Documentation
+
+- **Component Documentation**: Document component props, behavior, and examples
+- **Hook Documentation**: Document custom hook parameters, returns, and usage
+- **Inline Comments**: Add contextual comments for complex logic
+- **TypeScript Types**: Use detailed and descriptive TypeScript types as documentation
+
+### 12. Project-Specific Guidelines
+
+- **Swap Interface**: Replicate Uniswap V2 token swap interface with improvements
+- **Token Lists**: Implement custom token lists with search and filtering
+- **Price Charts**: Add interactive price charts for selected tokens
+- **Transaction History**: Display user's transaction history with detailed information
+- **Settings Panel**: Create configurable settings for slippage tolerance and transaction deadline
