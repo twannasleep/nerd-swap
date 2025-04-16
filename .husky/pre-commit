@@ -1,4 +1,3 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
-# Skip pre-commit checks to allow committing
-exit 0
+npx lint-staged
