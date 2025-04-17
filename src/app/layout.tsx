@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
-import '@mantine/core/styles.css';
 import { RootProvider } from '@/lib/providers/RootProvider';
+import { ThemeProvider } from '@/lib/providers/ThemeProvider';
 import './globals.css';
 
 const geistSans = Geist({
@@ -31,7 +31,9 @@ export default async function RootLayout({
   return (
     <html suppressHydrationWarning lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <RootProvider cookies={appKitCookies}>{children}</RootProvider>
+        <ThemeProvider>
+          <RootProvider cookies={appKitCookies}>{children}</RootProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
