@@ -75,28 +75,32 @@ Build a simple decentralized application (dApp) frontend that mimics a Uniswap V
   - [✓] Integrate Slippage Settings into Swap Form
   - [✓] Add "Swap" button (needs enabling logic)
 
-### Phase 3: Contract Interaction - Rate & Swap Logic [ ]
+### Phase 3: Contract Interaction - Rate & Swap Logic [✓ - Partially]
 
-- [ ] Define Constants (Router Address, Token Addresses, ABIs)
-- [ ] Implement `getAmountsOut` / `getAmountsIn` logic using `wagmi`/`viem` hooks to fetch rates.
-- [ ] Update UI to display calculated amounts and swap rate dynamically.
-- [ ] Implement logic to check/request token approval (`approve` function).
+- [✓] Define Constants (Router Address, Token Addresses, Minimal ABIs)
+- [✓] Implement `getAmountsOut` logic using `wagmi`/`viem` hooks to fetch rates.
+- [✓] Update UI to display calculated amounts and swap rate dynamically.
+- [✓] Handle fetching/managing token decimals.
+- [✓] Implement logic to check/request token approval (`approve` function).
 - [ ] Implement core swap execution (`swapExactTokensForTokens` / `swapExactETHForTokens`).
-- [ ] Enable "Swap" button when inputs are valid and wallet is connected.
+- [✓] Enable "Swap" / "Approve" button based on allowance state (Needs balance checks).
 
 ### Phase 4: Transaction Handling & Feedback [✓ - Partially]
 
-- [ ] Use `wagmi` hooks (e.g., `useWaitForTransactionReceipt`) to track transaction status.
 - [✓] Install Toaster (`sonner`) for notifications.
 - [✓] Display feedback for slippage settings changes.
-- [ ] Display transaction status feedback (Pending, Success, Failed).
-- [ ] Handle potential transaction errors gracefully.
+- [✓] Display feedback for approval initiation/success/failure.
+- [ ] Use `wagmi` hooks (e.g., `useWaitForTransactionReceipt`) to track swap transaction status.
+- [ ] Display swap transaction status feedback (Pending, Success, Failed).
+- [ ] Handle potential swap transaction errors gracefully.
 
 ### Phase 5: UI/UX Refinement [✓ - Partially]
 
 - [✓] Dark Mode implemented
+- [✓] Add loading states for fetching rates.
+- [✓] Add loading/pending state for approval button.
 - [ ] Ensure form responsiveness.
-- [ ] Add loading states (fetching rates, pending transaction).
+- [ ] Add loading states for pending swap transaction.
 - [ ] Refine error messages.
 
 ### Phase 6: Bonus Features (Optional) [ ]
@@ -121,13 +125,13 @@ const BNB_TESTNET_CHAIN_ID = 97;
 const BNB_TESTNET_RPC = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
 
 // Contract Addresses (BNB Testnet)
-const UNISWAP_V2_ROUTER_ADDRESS = '0xD99D1c33F9fC3444f8101754aBC46c52416550D1';
-const WBNB_ADDRESS = '0xae13d989dac2f0debff460ac112a837c89baa7cd'; // Wrapped BNB on Testnet
-const TEST63_TOKEN_ADDRESS = '0xfe113952C81D14520a8752C87c47f79564892bA3';
+const UNISWAP_V2_ROUTER_ADDRESS = '0xD99D1c33F9fC3444f8101754aBC46c52416550D1' as const;
+const WBNB_ADDRESS = '0xae13d989dac2f0debff460ac112a837c89baa7cd' as const; // Wrapped BNB on Testnet
+const TEST63_TOKEN_ADDRESS = '0xfe113952C81D14520a8752C87c47f79564892bA3' as const;
 
-// ABIs (Need to be sourced/added)
-// const UNISWAP_V2_ROUTER_ABI = [...];
-// const ERC20_ABI = [...]; // Standard ERC20 ABI for approval/balance
+// ABIs (Minimal versions added to constants.ts)
+const UNISWAP_V2_ROUTER_ABI = [...]; // In constants.ts
+const ERC20_ABI = [...]; // In constants.ts
 // const UNISWAP_V2_PAIR_ABI = [...]; // For bonus: fetching reserves
 ```
 
@@ -135,18 +139,15 @@ const TEST63_TOKEN_ADDRESS = '0xfe113952C81D14520a8752C87c47f79564892bA3';
 
 - [✓] Phase 1: Setup & Core UI
 - [✓] Phase 2: Wallet Connection & Basic Swap UI
-- [ ] Phase 3: Contract Interaction - Rate & Swap Logic
-- [✓] Phase 4: Transaction Handling & Feedback (Toaster setup, needs wiring for TX)
-- [✓] Phase 5: UI/UX Refinement (Dark mode)
+- [✓] Phase 3: Contract Interaction - Rate & Swap Logic (Rate fetching & Approval logic done)
+- [✓] Phase 4: Transaction Handling & Feedback (Toaster setup, Approval feedback done)
+- [✓] Phase 5: UI/UX Refinement (Dark mode, Rate/Approval loading states)
 - [ ] Phase 6: Bonus Features (Slippage UI done)
 - [✓] Phase 7: Documentation
 
 ## Next Steps
 
-1. Define constants for contract addresses and ABIs (Phase 3).
-2. Start implementing the logic to fetch exchange rates using the Router contract (Phase 3).
-3. Update the UI to display fetched rates and calculated amounts.
-4. Create the basic `SwapForm` component structure (Phase 2).
-5. Add token data (BNB, TEST63) and implement selection UI.
-6. Add input fields and the "Switch Tokens" button.
-7. Start implementing the logic to fetch exchange rates using the Router contract (Phase 3).
+1. Implement the core swap execution function (`handleSwap`) using `wagmi` hooks (Phase 3).
+2. Implement swap transaction status tracking and feedback using `sonner` (Phase 4).
+3. Add balance fetching and checks for UI display and swap/approve button disabling.
+4. Refine UI/UX (responsiveness, loading states for swap).
