@@ -1,8 +1,8 @@
 'use client';
 
 import { RefreshCw, Settings } from 'lucide-react';
-import { Button } from '@/lib/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/lib/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Using lucide-react icons
 
