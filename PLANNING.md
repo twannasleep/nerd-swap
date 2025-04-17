@@ -56,21 +56,24 @@ Build a simple decentralized application (dApp) frontend that mimics a Uniswap V
 
 ## Implementation Plan (Mapped to Requirements)
 
-### Phase 1: Setup & Core UI [✓ - Mostly]
+### Phase 1: Setup & Core UI [✓]
 
 - [✓] Base Project Setup (Next.js, TS, Tailwind, Radix, Fonts, Linting)
 - [✓] Theming (`next-themes`, Dark Mode)
 - [✓] Header Component with Logo
 - [✓] Web3 Dependencies Installed (`@reown/appkit`, `wagmi`, `viem`, etc.)
 
-### Phase 2: Wallet Connection & Basic Swap UI [In Progress]
+### Phase 2: Wallet Connection & Basic Swap UI [✓]
 
 - [✓] Wallet Connection (`@reown/appkit` configured and `<appkit-button>` in Header)
-- [ ] Create Swap Form Component (`src/features/swap/components/SwapForm.tsx` - _suggested path_)
-  - [ ] Add Token Selection Dropdowns (using BNB & TEST63)
-  - [ ] Add Input fields for amounts
-  - [ ] Add "Switch Tokens" button functionality
-  - [ ] Add "Swap" button (initially disabled)
+- [✓] Create Swap Form Component (`src/features/swap/components/SwapForm.tsx`)
+  - [✓] Add Token Selection Dialog (`TokenSelectorDialog.tsx`)
+  - [✓] Integrate Token Selection into Swap Form
+  - [✓] Add Input fields for amounts
+  - [✓] Add "Switch Tokens" button functionality (with animation)
+  - [✓] Add Slippage Settings UI (`SlippageSettings.tsx`)
+  - [✓] Integrate Slippage Settings into Swap Form
+  - [✓] Add "Swap" button (needs enabling logic)
 
 ### Phase 3: Contract Interaction - Rate & Swap Logic [ ]
 
@@ -81,13 +84,15 @@ Build a simple decentralized application (dApp) frontend that mimics a Uniswap V
 - [ ] Implement core swap execution (`swapExactTokensForTokens` / `swapExactETHForTokens`).
 - [ ] Enable "Swap" button when inputs are valid and wallet is connected.
 
-### Phase 4: Transaction Handling & Feedback [ ]
+### Phase 4: Transaction Handling & Feedback [✓ - Partially]
 
 - [ ] Use `wagmi` hooks (e.g., `useWaitForTransactionReceipt`) to track transaction status.
-- [ ] Display transaction status feedback (e.g., using toasts/notifications or inline messages).
+- [✓] Install Toaster (`sonner`) for notifications.
+- [✓] Display feedback for slippage settings changes.
+- [ ] Display transaction status feedback (Pending, Success, Failed).
 - [ ] Handle potential transaction errors gracefully.
 
-### Phase 5: UI/UX Refinement [ ]
+### Phase 5: UI/UX Refinement [✓ - Partially]
 
 - [✓] Dark Mode implemented
 - [ ] Ensure form responsiveness.
@@ -97,10 +102,11 @@ Build a simple decentralized application (dApp) frontend that mimics a Uniswap V
 ### Phase 6: Bonus Features (Optional) [ ]
 
 - [ ] Implement Exact In / Exact Out toggle and logic.
-- [ ] Implement Slippage handling.
+- [✓] Implement Slippage handling UI (`SlippageSettings.tsx`).
+- [ ] Implement Slippage logic in swap execution.
 - [ ] Add Unit Tests.
 
-### Phase 7: Documentation [ ]
+### Phase 7: Documentation [✓]
 
 - [✓] Basic README exists
 - [✓] PLANNING.md updated
@@ -127,18 +133,20 @@ const TEST63_TOKEN_ADDRESS = '0xfe113952C81D14520a8752C87c47f79564892bA3';
 
 ## Progress Tracking
 
-- [✓] Phase 1: Setup & Core UI (Mostly complete)
-- [✓] Phase 2: Wallet Connection established via AppKit
-- [ ] Phase 2: Basic Swap UI needs creation
+- [✓] Phase 1: Setup & Core UI
+- [✓] Phase 2: Wallet Connection & Basic Swap UI
 - [ ] Phase 3: Contract Interaction - Rate & Swap Logic
-- [ ] Phase 4: Transaction Handling & Feedback
-- [ ] Phase 5: UI/UX Refinement (Beyond dark mode)
-- [ ] Phase 6: Bonus Features
-- [✓] Phase 7: Documentation (Basic files created)
+- [✓] Phase 4: Transaction Handling & Feedback (Toaster setup, needs wiring for TX)
+- [✓] Phase 5: UI/UX Refinement (Dark mode)
+- [ ] Phase 6: Bonus Features (Slippage UI done)
+- [✓] Phase 7: Documentation
 
 ## Next Steps
 
-1. Create the basic `SwapForm` component structure (Phase 2).
-2. Add token data (BNB, TEST63) and implement selection UI.
-3. Add input fields and the "Switch Tokens" button.
-4. Start implementing the logic to fetch exchange rates using the Router contract (Phase 3).
+1. Define constants for contract addresses and ABIs (Phase 3).
+2. Start implementing the logic to fetch exchange rates using the Router contract (Phase 3).
+3. Update the UI to display fetched rates and calculated amounts.
+4. Create the basic `SwapForm` component structure (Phase 2).
+5. Add token data (BNB, TEST63) and implement selection UI.
+6. Add input fields and the "Switch Tokens" button.
+7. Start implementing the logic to fetch exchange rates using the Router contract (Phase 3).
