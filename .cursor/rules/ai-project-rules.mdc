@@ -1,0 +1,72 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# AI Agent Rules for Nerd Swap Project
+
+## 1. Project Overview
+
+- **Framework**: Next.js (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4 (using `globals.css`, `tailwind.config.ts`, `postcss.config.mjs`)
+- **UI Components**: Radix UI primitives, potentially custom components in `src/components` (though this directory isn't explicitly listed, it's a common convention). `lucide-react` for icons.
+- **State Management/Data Fetching**: `@tanstack/react-query` (likely via `RootProvider`).
+- **Web3 Integration**: `wagmi`, `@reown/appkit`, `@reown/appkit-adapter-solana`, `@reown/appkit-adapter-wagmi`. State likely managed via `RootProvider`.
+- **Linting/Formatting**: ESLint (`eslint.config.mjs`), Prettier (`.prettierrc.json`, `.prettierignore`), Commitlint (`commitlint.config.js`), Lint-Staged (`.lintstagedrc.js`), Husky (`.husky/`)
+- **Testing**: Jest (`jest.config.js`, `jest.setup.js`)
+- **Fonts**: Geist Sans and Geist Mono (`src/app/layout.tsx`)
+
+## 2. Directory Structure
+
+- **Source Code**: `src/`
+  - **Routing & Pages**: `src/app/` (Follow Next.js App Router conventions: `page.tsx`, `layout.tsx`, route groups `(...)`, dynamic routes `[...]`)
+  - **Core Logic/Providers**: `src/lib/` (e.g., `src/lib/providers/RootProvider.tsx`)
+  - **Feature Modules**: `src/features/` (Group related components, hooks, utils by feature)
+  - **Utilities**: `src/utils/` (General utility functions)
+  - **Components**: Likely `src/components/` (Reusable UI components - *create if needed*)
+  - **Styles**: Global styles in `src/app/globals.css`. Primarily use Tailwind utility classes.
+- **Public Assets**: `public/` (Static assets like images, favicons)
+- **Configuration**: Root directory (e.g., `next.config.ts`, `tsconfig.json`, `tailwind.config.ts`, `eslint.config.mjs`)
+- **AI Rules**: `.cursor/rules/`
+
+## 3. Coding Standards & Conventions
+
+- **TypeScript**: Adhere to strict TypeScript rules defined in `tsconfig.json`. Use types effectively. Avoid `any` where possible (ESLint warns).
+- **React**: Use functional components and hooks. Follow rules of hooks (`eslint-plugin-react-hooks`).
+- **Next.js**: Follow App Router conventions. Use Server Components where possible, Client Components (`'use client'`) only when necessary (state, effects, browser APIs).
+- **Imports**: Use path aliases defined in `tsconfig.json` (e.g., `@/lib/...`). Imports are sorted automatically by `@trivago/prettier-plugin-sort-imports`.
+- **Styling**:
+  - Prioritize Tailwind CSS utility classes.
+  - Use `clsx` and `tailwind-merge` for conditional and merged classes.
+  - Global styles are in `src/app/globals.css`. Avoid adding component-specific styles here.
+  - Component-specific styles should be collocated or use CSS Modules if necessary (though Tailwind is preferred).
+- **State Management**: Utilize `@tanstack/react-query` for server state and caching, managed via `RootProvider`. Use `wagmi` hooks for Web3 state.
+- **Web3**: Interact with blockchain via `wagmi` hooks and `@reown/appkit`. Configuration is likely within `RootProvider`.
+- **Naming**:
+  - Components: PascalCase (`MyComponent.tsx`)
+  - Files/Folders: kebab-case (e.g., `user-profile/`) or camelCase/PascalCase for TS/TSX files. Be consistent.
+  - Functions/Variables: camelCase
+- **Linting/Formatting**: Code MUST pass ESLint (`npm run lint`) and Prettier (`npm run format`). Follow rules in `eslint.config.mjs`. Do not use `console.log`, prefer `warn` or `error`.
+- **Commits**: Follow conventional commit guidelines (`commitlint.config.js`).
+
+## 4. Creating New Components/Features
+
+- **Components**: Place reusable UI components in `src/components/` (create if not present), organized by function or feature.
+- **Features**: Group feature-specific logic (components, hooks, utils) within `src/features/feature-name/`.
+- **Utilities**: Place generic, reusable functions in `src/utils/`.
+- **Providers/Core Logic**: Place context providers, core setup, or library configurations in `src/lib/`.
+- **Routing**: Add new pages/routes within the `src/app/` directory following Next.js conventions.
+
+## 5. Dependencies
+
+- Add new dependencies using `npm install <package>` or `npm install --save-dev <package>`.
+- Prefer established libraries already in use (Radix, TanStack Query, wagmi, lucide-react).
+
+## 6. Environment Variables
+
+- Use `.env.local` for local development secrets (not committed).
+- Use `.env` for default non-secret variables (committed).
+- Access variables via `process.env.VARIABLE_NAME`. Define types if necessary.
+
+*This ruleset is based on the current project state. Adapt as the project evolves.*
