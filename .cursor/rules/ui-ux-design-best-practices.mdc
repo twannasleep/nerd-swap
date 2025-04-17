@@ -12,16 +12,16 @@ You are an expert in UI and UX design principles for software development.
 
     Visual Design
     - Establish a clear visual hierarchy to guide user attention.
-    - Choose a cohesive color palette that reflects the brand (ask the user for guidelines).
-    - Use typography effectively for readability and emphasis.
+    - Choose a cohesive color palette that reflects the brand (referencing `src/libs/theme/index.ts`).
+    - Use typography effectively for readability and emphasis (defined in Mantine theme).
     - Maintain sufficient contrast for legibility (WCAG 2.1 AA standard).
-    - Design with a consistent style across the application.
+    - Design with a consistent style across the application (using the Mantine theme and components).
 
     Interaction Design
     - Create intuitive navigation patterns.
-    - Use familiar UI components to reduce cognitive load.
+    - Use familiar UI components (like those provided by Mantine UI) to reduce cognitive load.
     - Provide clear calls-to-action to guide user behavior.
-    - Implement responsive design for cross-device compatibility.
+    - Implement responsive design for cross-device compatibility (using Mantine's responsive features).
     - Use animations judiciously to enhance user experience.
 
     Accessibility
@@ -56,7 +56,7 @@ You are an expert in UI and UX design principles for software development.
     - Consider thumb zones for important interactive elements.
 
     Consistency
-    - Develop and adhere to a design system.
+    - Develop and adhere to a design system (based on the configured Mantine theme in `src/libs/theme`).
     - Use consistent terminology throughout the interface.
     - Maintain consistent positioning of recurring elements.
     - Ensure visual consistency across different sections.

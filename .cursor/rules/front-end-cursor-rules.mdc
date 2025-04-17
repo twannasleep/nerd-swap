@@ -15,8 +15,8 @@ You are a Senior Front-End Developer and an Expert building "Nerd Swap" - a soph
 
 - **Framework**: Next.js 15.3.0
 - **Language**: TypeScript
-- **UI**: TailwindCSS + Chakra UI
-- **Web3**: wagmi, rainbowkit, viem
+- **UI**: Mantine UI (v7.17.4)
+- **Web3**: Reown AppKit (v1.7.3), wagmi (v2.14.16), viem (v2.27.0)
 - **Testing**: Jest + React Testing Library
 
 ## Code Implementation Guidelines
@@ -38,11 +38,11 @@ You are a Senior Front-End Developer and an Expert building "Nerd Swap" - a soph
 
 ### 3. Styling Approach
 
-- **Tailwind First**: Use Tailwind classes as the primary styling method
-- **Chakra UI Components**: Leverage Chakra UI for complex interactive components
-- **Theme Consistency**: Follow Uniswap V2 style while maintaining brand identity
-- **Class Syntax**: Use `className={clsx("base-classes", {"conditional-class": condition})}` for complex conditionals
-- **Dark/Light Modes**: Implement complete theme support with smooth transitions
+- **Mantine First**: Utilize Mantine components and theme system as the primary styling method (`src/libs/theme`).
+- **Theme Customization**: Customize Mantine components globally in `src/libs/theme/components.ts` or locally via `styles` prop.
+- **Theme Consistency**: Follow Uniswap V2 style while maintaining brand identity through the Mantine theme.
+- **Inline Styles/sx Prop**: Use Mantine's `style` or `sx` props for minor, one-off adjustments if necessary.
+- **Dark/Light Modes**: Implement complete theme support using Mantine's color scheme capabilities.
 
 ### 4. Performance Optimization
 
@@ -71,18 +71,19 @@ You are a Senior Front-End Developer and an Expert building "Nerd Swap" - a soph
 
 ### 7. Web3 Implementation
 
-- **Network Configuration**: Configure BNB Testnet with proper RPC endpoints and chain IDs
-- **Wallet Connection**: Implement seamless wallet connection UI with status indicators
+- **Network Configuration**: Configure EVM and Solana networks in `src/features/web3/config/appKitConfig.ts`.
+- **Wallet Connection**: Implement seamless wallet connection using Reown AppKit modal (`useAppKit`) and hooks (`useAppKitAccount`).
 - **Token Management**:
-  - Display token balances with proper formatting
-  - Implement token selection interface with search functionality
-  - Show token price and value calculations
+  - Display token balances with proper formatting (e.g., using `useBalance` from wagmi for EVM).
+  - Implement token selection interface (`src/features/tokens/components/TokenSelect.tsx`).
+  - Show token price and value calculations (requires fetching price data).
 - **Swap Execution**:
-  - Implement price impact warnings
-  - Show gas estimations
-  - Display transaction status and confirmations
-  - Handle transaction errors gracefully
-- **Contract Interaction**: Implement proper error handling and retry mechanisms
+  - Implement price impact warnings.
+  - Show gas estimations (using wagmi/viem for EVM).
+  - Display transaction status and confirmations (potentially using wagmi hooks or Reown features).
+  - Handle transaction errors gracefully.
+- **Contract Interaction**: Use wagmi/viem hooks for EVM contract interactions. Implement proper error handling and retry mechanisms.
+- **Multi-chain**: Leverage `useAppKitAccount({ namespace: '...' })` or similar patterns when handling chain-specific logic.
 
 ### 8. Error Handling
 

@@ -7,12 +7,7 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
-    optimizePackageImports: [
-      '@mantine/core',
-      '@mantine/hooks',
-      '@mantine/notifications',
-      '@reown/appkit',
-    ],
+    optimizePackageImports: ['@reown/appkit'],
   },
   webpack: config => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding');

@@ -1,39 +1,34 @@
 'use client';
 
 import { type ReactNode } from 'react';
-import { mainnet } from '@reown/appkit/networks';
-import { type ChainAdapter, createAppKit } from '@reown/appkit/react';
+import type { ChainAdapter } from '@reown/appkit';
+import { createAppKit } from '@reown/appkit/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type Config, WagmiProvider, cookieToInitialState } from 'wagmi';
-import { config } from '../config';
-import { networks, projectId, wagmiAdapter } from '../config/wagmi';
-
-// Set up queryClient
-const queryClient = new QueryClient();
-
-if (!projectId) {
-  throw new Error('Project ID is not defined');
-}
-
-// Set up metadata
-const metadata = {
-  name: 'Nerd Swap',
-  description: 'Uniswap V2 token swap form clone',
-  url: 'http://localhost:3000', // Update this with your domain
-  icons: ['https://avatars.githubusercontent.com/u/179229932'],
-};
-
-// Create the modal
-export const modal = createAppKit({
-  adapters: [wagmiAdapter as ChainAdapter],
-  projectId,
-  networks,
-  defaultNetwork: mainnet,
+import {
+  config,
   metadata,
+  networks,
+  projectId,
+  solanaAdapter,
+  wagmiAdapter,
+} from '../config/appKitConfig';
+
+export const modal = createAppKit({
+  adapters: [wagmiAdapter as ChainAdapter, solanaAdapter as ChainAdapter],
+  networks,
+  metadata,
+  projectId,
   features: {
     analytics: true,
+    email: false,
+    allWallets: true,
+    socials: false,
+    emailShowWallets: false,
   },
 });
+
+const queryClient = new QueryClient();
 
 export function Web3Provider({
   children,

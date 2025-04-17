@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
-import { ColorSchemeScript, mantineHtmlProps } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { RootProvider } from '@/libs/providers/RootProvider';
 import './globals.css';
@@ -30,10 +29,7 @@ export default async function RootLayout({
   const appKitCookies = cookieStore.get('wagmi.store')?.value ?? null;
 
   return (
-    <html {...mantineHtmlProps}>
-      <head>
-        <ColorSchemeScript defaultColorScheme="dark" />
-      </head>
+    <html suppressHydrationWarning lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <RootProvider cookies={appKitCookies}>{children}</RootProvider>
       </body>

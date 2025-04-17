@@ -1,10 +1,7 @@
-import { Container } from '@mantine/core';
-import { SwapForm } from '@/features/swap/components/SwapForm';
-
-export default function HomePage() {
+export default function SwapPage() {
   return (
-    <Container size="sm" py="xl">
-      <SwapForm />
-    </Container>
+    <div>
+      <h1>Hello World</h1>
+    </div>
   );
 }
