@@ -1,167 +1,144 @@
-# Uniswap V2 Swap Form Clone - Project Planning
+# Frontend Web3 Hometest: Uniswap V2 Swap Form Clone (Nerd Swap)
 
 ## Project Overview
 
-A decentralized application (dApp) frontend that mimics a Uniswap V2 token swap form, with Web3 integration on BNB Testnet.
+Build a simple decentralized application (dApp) frontend that mimics a Uniswap V2 token swap form, interacting with the Uniswap V2 smart contract on the BNB Testnet.
 
-## Tech Stack
+## Tech Stack (Current Project Setup)
 
-- **Framework**: Next.js 15.3.0 ✓
+- **Framework**: Next.js (App Router) ✓
 - **Language**: TypeScript ✓
-- **UI**: TailwindCSS ✓ + Mantine UI ✓
-- **Web3**: TBD (wagmi/rainbowkit + viem/ethers.js)
-- **Testing**: Jest + React Testing Library ✓
+- **Styling**: Tailwind CSS v4 ✓
+- **UI Components**: Radix UI Primitives (via `src/components/ui`) ✓, `lucide-react` for icons ✓
+- **State Management/Data Fetching**: `@tanstack/react-query` ✓
+- **Web3**: `@reown/appkit`, `@reown/appkit-adapter-wagmi`, `@reown/appkit-adapter-solana`, `wagmi`, `viem` ✓
+- **Theming**: `next-themes` ✓
+- **Testing**: Jest ✓
+- **Linting/Formatting**: ESLint, Prettier, Commitlint, Lint-Staged, Husky ✓
+- **Fonts**: Geist Sans, Geist Mono ✓
 
-## Current Structure
+## Core Requirements (Hometest)
 
-```
-src/
-├── app/                        # Next.js app structure ✓
-├── libs/                       # Shared libraries
-│   └── theme/                  # Theme configuration and providers ✓
-├── features/                   # Feature-based organization (empty)
-│   ├── web3/                   # Web3 integration feature (not started)
-│   ├── tokens/                 # Token management feature (not started)
-│   ├── swap/                   # Swap functionality feature (not started)
-│   └── transactions/           # Transaction handling feature (not started)
-├── utils/                      # Shared utilities (empty)
-│   └── tests/                  # Test utilities ✓
-└── providers/                  # App-wide providers (not started)
-```
+1. **Wallet Connection:**
+   - Connect to MetaMask (or other wallets supported by AppKit) on BNB Testnet.
+   - Display wallet connection status.
+2. **Swap Form UI:**
+   - Select two tokens: BNB (native) and a test ERC-20 token (TEST63: `0xfe113952C81D14520a8752C87c47f79564892bA3`).
+   - Input field for the "input" token amount.
+   - Display the calculated "output" token amount based on the Uniswap V2 pair rate.
+   - Display the estimated swap rate (e.g., "1 BNB = X TEST63").
+   - "Switch" button to reverse input/output tokens.
+   - "Swap" button to initiate the transaction.
+3. **Smart Contract Interaction:**
+   - Use `viem` (provided via `wagmi`) to interact with contracts.
+   - Interact with the Uniswap V2 Router contract on BNB Testnet (`0xD99D1c33F9fC3444f8101754aBC46c52416550D1`).
+   - Use the Router ABI to fetch exchange rates (e.g., `getAmountsOut`) and execute swaps (e.g., `swapExactTokensForTokens` or `swapExactETHForTokens`).
+   - Handle ERC-20 token approvals if necessary before swapping.
+4. **Transaction Feedback:**
+   - Show transaction status (Pending, Success, Failed) using notifications or UI elements.
+5. **UI/UX:**
+   - Clean, intuitive interface.
+   - Responsive design (desktop/mobile).
 
-## Implementation Plan
+## Bonus Features (Optional)
 
-### Phase 1: Project Setup [✓]
+1. **Exact Input / Exact Output:**
+   - Add UI toggle/indicator for `exact_in` vs `exact_out`.
+   - Implement `exact_in` logic (`swapExactTokensForTokens` / `swapExactETHForTokens`).
+   - Implement `exact_out` logic (`swapTokensForExactTokens` / `swapETHForExactTokens`).
+   - Fetch pair reserves dynamically using the Uniswap V2 Pair contract ABI.
+   - Handle slippage tolerance (e.g., 1-3%) by calculating min/max amounts for swap functions.
+2. **Unit Tests:**
+   - Write 1-2 unit tests (Jest/React Testing Library) for:
+     - Token selection logic.
+     - Amount calculation logic.
+     - UI component rendering.
 
-- [✓] Initialize Next.js project with TypeScript
-- [✓] Configure TailwindCSS
-- [✓] Set up project structure
-- [✓] Set up testing environment with Jest
-- [✓] Set up Mantine UI integration
-- [ ] Initialize Web3 dependencies
-  - [ ] Install and configure wagmi/rainbowkit
-  - [ ] Install and configure viem/ethers.js
-- [ ] Configure BNB Testnet RPC
+## Implementation Plan (Mapped to Requirements)
 
-### Phase 2: Web3 Integration [ ]
+### Phase 1: Setup & Core UI [✓ - Mostly]
 
-- [ ] Create Web3 provider wrapper
-- [ ] Implement wallet connection
-  - [ ] Connect button component
-  - [ ] Wallet status display
-- [ ] Set up contract interaction utilities
-- [ ] Configure Uniswap V2 Router contract
+- [✓] Base Project Setup (Next.js, TS, Tailwind, Radix, Fonts, Linting)
+- [✓] Theming (`next-themes`, Dark Mode)
+- [✓] Header Component with Logo
+- [✓] Web3 Dependencies Installed (`@reown/appkit`, `wagmi`, `viem`, etc.)
 
-### Phase 3: Token Management [ ]
+### Phase 2: Wallet Connection & Basic Swap UI [In Progress]
 
-- [ ] Create token list configuration
-  - [ ] BNB token
-  - [ ] TEST63 token
-- [ ] Implement token selection UI
-  - [ ] Token dropdown component
-  - [ ] Token balance display
-- [ ] Create token price fetching logic
+- [✓] Wallet Connection (`@reown/appkit` configured and `<appkit-button>` in Header)
+- [ ] Create Swap Form Component (`src/features/swap/components/SwapForm.tsx` - _suggested path_)
+  - [ ] Add Token Selection Dropdowns (using BNB & TEST63)
+  - [ ] Add Input fields for amounts
+  - [ ] Add "Switch Tokens" button functionality
+  - [ ] Add "Swap" button (initially disabled)
 
-### Phase 4: Swap Form Implementation [ ]
+### Phase 3: Contract Interaction - Rate & Swap Logic [ ]
 
-- [ ] Create swap form UI
-  - [ ] Input/output fields
-  - [ ] Token selection dropdowns
-  - [ ] Switch tokens button
-- [ ] Implement price calculation
-  - [ ] Get pair reserves
-  - [ ] Calculate exchange rate
-- [ ] Add slippage handling
-  - [ ] Slippage input
-  - [ ] Minimum output calculation
+- [ ] Define Constants (Router Address, Token Addresses, ABIs)
+- [ ] Implement `getAmountsOut` / `getAmountsIn` logic using `wagmi`/`viem` hooks to fetch rates.
+- [ ] Update UI to display calculated amounts and swap rate dynamically.
+- [ ] Implement logic to check/request token approval (`approve` function).
+- [ ] Implement core swap execution (`swapExactTokensForTokens` / `swapExactETHForTokens`).
+- [ ] Enable "Swap" button when inputs are valid and wallet is connected.
 
-### Phase 5: Transaction Handling [ ]
+### Phase 4: Transaction Handling & Feedback [ ]
 
-- [ ] Implement swap execution
-  - [ ] Approve token spending
-  - [ ] Execute swap transaction
-- [ ] Add transaction status tracking
-  - [ ] Pending state
-  - [ ] Success state
-  - [ ] Error handling
-- [ ] Create transaction feedback UI
+- [ ] Use `wagmi` hooks (e.g., `useWaitForTransactionReceipt`) to track transaction status.
+- [ ] Display transaction status feedback (e.g., using toasts/notifications or inline messages).
+- [ ] Handle potential transaction errors gracefully.
 
-### Phase 6: UI/UX Refinement [ ]
+### Phase 5: UI/UX Refinement [ ]
 
-- [ ] Implement responsive design
-- [ ] Add loading states
-- [ ] Create error messages
-- [ ] Add success notifications
-- [✓] Implement dark/light mode
+- [✓] Dark Mode implemented
+- [ ] Ensure form responsiveness.
+- [ ] Add loading states (fetching rates, pending transaction).
+- [ ] Refine error messages.
 
-### Phase 7: Bonus Features [ ]
+### Phase 6: Bonus Features (Optional) [ ]
 
-- [ ] Implement exact_in/exact_out swap logic
-  - [ ] Toggle between modes
-  - [ ] Different calculation methods
-- [ ] Add unit tests
-  - [ ] Token selection tests
-  - [ ] Price calculation tests
-  - [ ] Transaction flow tests
+- [ ] Implement Exact In / Exact Out toggle and logic.
+- [ ] Implement Slippage handling.
+- [ ] Add Unit Tests.
 
-### Phase 8: Documentation & Deployment [ ]
+### Phase 7: Documentation [ ]
 
-- [✓] Create basic README
-- [ ] Document setup instructions
-- [ ] Add code comments
-- [ ] Deploy to Vercel/Netlify (optional)
+- [✓] Basic README exists
+- [✓] PLANNING.md updated
+- [ ] Add detailed setup instructions to README.md.
+- [ ] Add code comments where necessary.
 
-## Dependencies to Install
-
-```bash
-# Web3
-npm install wagmi viem @rainbow-me/rainbowkit
-
-# UI - Already installed:
-# - @mantine/core
-# - @mantine/hooks
-# - @mantine/notifications
-# - react-icons
-# - next-themes
-```
-
-## Constants
+## Constants Needed
 
 ```typescript
 // BNB Testnet
+const BNB_TESTNET_CHAIN_ID = 97;
 const BNB_TESTNET_RPC = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
 
-// Contract Addresses
-const UNISWAP_V2_ROUTER = '0xD99D1c33F9fC3444f8101754aBC46c52416550D1';
-const TEST_TOKEN = '0xfe113952C81D14520a8752C87c47f79564892bA3';
+// Contract Addresses (BNB Testnet)
+const UNISWAP_V2_ROUTER_ADDRESS = '0xD99D1c33F9fC3444f8101754aBC46c52416550D1';
+const WBNB_ADDRESS = '0xae13d989dac2f0debff460ac112a837c89baa7cd'; // Wrapped BNB on Testnet
+const TEST63_TOKEN_ADDRESS = '0xfe113952C81D14520a8752C87c47f79564892bA3';
 
-// Default Slippage
-const DEFAULT_SLIPPAGE = 0.5; // 0.5%
+// ABIs (Need to be sourced/added)
+// const UNISWAP_V2_ROUTER_ABI = [...];
+// const ERC20_ABI = [...]; // Standard ERC20 ABI for approval/balance
+// const UNISWAP_V2_PAIR_ABI = [...]; // For bonus: fetching reserves
 ```
 
 ## Progress Tracking
 
-- [✓] Basic project setup with Next.js, TypeScript, and Mantine UI
-- [✓] Testing environment with Jest and React Testing Library
-- [✓] Theme configuration with dark/light mode support
-- [ ] Phase 2: Web3 Integration
-- [ ] Phase 3: Token Management
-- [ ] Phase 4: Swap Form Implementation
-- [ ] Phase 5: Transaction Handling
-- [ ] Phase 6: UI/UX Refinement (partially complete)
-- [ ] Phase 7: Bonus Features
-- [ ] Phase 8: Documentation & Deployment (partially complete)
+- [✓] Phase 1: Setup & Core UI (Mostly complete)
+- [✓] Phase 2: Wallet Connection established via AppKit
+- [ ] Phase 2: Basic Swap UI needs creation
+- [ ] Phase 3: Contract Interaction - Rate & Swap Logic
+- [ ] Phase 4: Transaction Handling & Feedback
+- [ ] Phase 5: UI/UX Refinement (Beyond dark mode)
+- [ ] Phase 6: Bonus Features
+- [✓] Phase 7: Documentation (Basic files created)
 
 ## Next Steps
 
-1. Install and configure Web3 dependencies (wagmi/rainbowkit and viem/ethers.js)
-2. Set up BNB Testnet RPC configuration
-3. Implement Web3 provider and wallet connection
-4. Begin implementing the token management feature
-
-## Notes
-
-- Project has a working base with Next.js, TypeScript, and Mantine UI
-- Dark/light mode functionality is already implemented
-- Consider adjusting the UI components to match Uniswap V2 style while leveraging Mantine UI
-- The features directory structure needs to be populated with the planned features
+1. Create the basic `SwapForm` component structure (Phase 2).
+2. Add token data (BNB, TEST63) and implement selection UI.
+3. Add input fields and the "Switch Tokens" button.
+4. Start implementing the logic to fetch exchange rates using the Router contract (Phase 3).

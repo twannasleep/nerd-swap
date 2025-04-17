@@ -2,6 +2,7 @@ import { SolanaAdapter } from '@reown/appkit-adapter-solana';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import {
   AppKitNetwork,
+  bscTestnet,
   sepolia,
   solana,
   solanaDevnet,
@@ -10,6 +11,7 @@ import {
 
 // Define the networks you want to support
 export const networks = [
+  bscTestnet,
   sepolia,
   solana as AppKitNetwork,
   solanaTestnet as AppKitNetwork,

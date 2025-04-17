@@ -26,6 +26,12 @@ export const modal = createAppKit({
     socials: false,
     emailShowWallets: false,
   },
+  themeMode: 'dark',
+  themeVariables: {
+    '--w3m-accent': '#6366F1',
+    '--w3m-border-radius-master': '4px',
+    '--w3m-font-family': 'var(--font-geist-sans)',
+  },
 });
 
 const queryClient = new QueryClient();

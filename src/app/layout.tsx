@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
+import { Toaster } from '@/components/ui/sonner';
 import { RootProvider } from '@/lib/providers/RootProvider';
 import { ThemeProvider } from '@/lib/providers/ThemeProvider';
 import './globals.css';
@@ -34,6 +35,7 @@ export default async function RootLayout({
         <ThemeProvider>
           <RootProvider cookies={appKitCookies}>{children}</RootProvider>
         </ThemeProvider>
+        <Toaster />
       </body>
     </html>
   );
