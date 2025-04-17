@@ -12,7 +12,8 @@
     "^next(.*)$",
     "<THIRD_PARTY_MODULES>",
     "^@/components/(.*)$",
-    "^@/libs/(.*)$",
+    "^@/lib/(.*)$",
+    "^@/features/(.*)$",
     "^@/styles/(.*)$",
     "^@/(.*)$",
     "^[./]"

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
 import '@mantine/core/styles.css';
-import { RootProvider } from '@/libs/providers/RootProvider';
+import { RootProvider } from '@/lib/providers/RootProvider';
 import './globals.css';
 
 const geistSans = Geist({
