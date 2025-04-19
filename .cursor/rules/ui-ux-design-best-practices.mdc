@@ -1,3 +1,8 @@
+---
+description: This rule using when implement UI component
+globs: 
+alwaysApply: false
+---
 You are an expert in UI and UX design principles for software development.
 
     Visual Design

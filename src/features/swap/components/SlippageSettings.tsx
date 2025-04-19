@@ -4,8 +4,14 @@ import * as React from 'react';
 import { SettingsIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 // Slippage presets
@@ -14,17 +20,30 @@ const SLIPPAGE_PRESETS = [0.1, 0.5, 1.0];
 interface SlippageSettingsProps {
   slippage: number;
   onSlippageChange: (newSlippage: number) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function SlippageSettings({ slippage, onSlippageChange }: SlippageSettingsProps) {
+export function SlippageSettings({
+  slippage,
+  onSlippageChange,
+  open,
+  onOpenChange,
+}: SlippageSettingsProps) {
   const [customSlippageInput, setCustomSlippageInput] = React.useState<string>(
     SLIPPAGE_PRESETS.includes(slippage) ? '' : slippage.toString()
   );
   const [isCustomSelected, setIsCustomSelected] = React.useState(
     !SLIPPAGE_PRESETS.includes(slippage)
   );
+  // Use internal state only if open/onOpenChange aren't provided
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
   const [isValidCustom, setIsValidCustom] = React.useState(true);
+
+  // Determine if we're using controlled or uncontrolled state
+  const isControlled = open !== undefined && onOpenChange !== undefined;
+  const isOpen = isControlled ? open : isPopoverOpen;
+  const setIsOpen = isControlled ? onOpenChange : setIsPopoverOpen;
 
   React.useEffect(() => {
     // Sync input value if slippage changes externally and it's not a preset
@@ -48,7 +67,7 @@ export function SlippageSettings({ slippage, onSlippageChange }: SlippageSetting
     setCustomSlippageInput('');
     setIsCustomSelected(false);
     setIsValidCustom(true);
-    setIsPopoverOpen(false);
+    setIsOpen(false);
     toast.success(`Slippage tolerance set to ${preset}%`);
   };
 
@@ -74,7 +93,7 @@ export function SlippageSettings({ slippage, onSlippageChange }: SlippageSetting
       const valid = !isNaN(numericValue) && numericValue > 0 && numericValue < 100;
       if (valid) {
         onSlippageChange(numericValue);
-        setIsPopoverOpen(false);
+        setIsOpen(false);
         toast.success(`Slippage tolerance set to ${numericValue}%`);
       } else {
         toast.error('Invalid slippage value. Please enter between 0.1 and 99.');
@@ -83,21 +102,16 @@ export function SlippageSettings({ slippage, onSlippageChange }: SlippageSetting
   };
 
   return (
-    <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <SettingsIcon className="size-5" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64" align="end">
-        <div className="grid gap-4">
-          <div className="space-y-2">
-            <h4 className="leading-none font-medium">Slippage Tolerance</h4>
-            <p className="text-muted-foreground text-sm">
-              Your transaction will revert if the price changes unfavorably by more than this
-              percentage.
-            </p>
-          </div>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle>Slippage Settings</DialogTitle>
+          <DialogDescription>
+            Your transaction will revert if the price changes unfavorably by more than this
+            percentage.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
           <div className="grid grid-cols-3 gap-2">
             {SLIPPAGE_PRESETS.map(preset => (
               <Button
@@ -120,7 +134,7 @@ export function SlippageSettings({ slippage, onSlippageChange }: SlippageSetting
               value={customSlippageInput}
               onChange={handleCustomChange}
               onFocus={handleCustomFocus}
-              onKeyDown={handleKeyDown} // Add KeyDown handler
+              onKeyDown={handleKeyDown}
               className={cn(
                 'flex-1',
                 isCustomSelected && (!isValidCustom ? 'border-destructive' : 'border-primary')
@@ -137,7 +151,7 @@ export function SlippageSettings({ slippage, onSlippageChange }: SlippageSetting
             <p className="text-destructive text-xs">Your transaction may fail or be frontrun</p>
           )}
         </div>
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,489 +1,551 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowDownUpIcon, ChevronDownIcon, LoaderCircleIcon } from 'lucide-react';
+import {
+  AlertCircleIcon,
+  ArrowDownIcon,
+  ChevronDownIcon,
+  LoaderCircleIcon,
+  RefreshCwIcon,
+  SettingsIcon,
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { useDebounce } from 'use-debounce';
-import { Address, formatUnits, maxUint256, parseUnits } from 'viem';
+import { formatUnits, maxUint256, parseUnits } from 'viem';
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import {
   BNB_TESTNET_CHAIN_ID,
-  TEST63_TOKEN_ADDRESS,
+  NATIVE_BNB_ADDRESS,
   UNISWAP_V2_ROUTER_ADDRESS,
   WBNB_ADDRESS,
   erc20Abi,
   uniswapV2RouterAbi,
 } from '../constants';
+import { useSwapCalculations } from '../hooks/useSwapCalculations';
+import { useSwapState } from '../hooks/useSwapState';
+import { BaseToken } from '../types';
 import { SlippageSettings } from './SlippageSettings';
+import { TokenAmountInput } from './TokenAmountInput';
 import { TokenSelectorDialog } from './TokenSelectorDialog';
 
-interface BaseToken {
-  address: string;
-  symbol: string;
-  name: string;
-  logoURI?: string;
-}
-
-interface Token extends BaseToken {
-  decimals: number;
-}
-
-const BNB_BASE: BaseToken = { address: '0xNative', symbol: 'BNB', name: 'Binance Coin' };
-const TEST63_BASE: BaseToken = {
-  address: TEST63_TOKEN_ADDRESS,
-  symbol: 'TEST63',
-  name: 'Test Token 63',
-};
-const DEFAULT_SLIPPAGE = 0.5;
-
-const getTokenWithDecimals = (
-  baseToken: BaseToken,
-  decimals?: number | bigint | null
-): Token | null => {
-  const dec = decimals !== undefined && decimals !== null ? Number(decimals) : undefined;
-  if (dec !== undefined && !isNaN(dec)) {
-    return { ...baseToken, decimals: dec };
-  }
-  if (baseToken.address === '0xNative') {
-    return { ...baseToken, decimals: 18 };
-  }
-  return null;
-};
-
 export function SwapForm() {
-  const { address: account, chain } = useAccount();
-  const [inputAmount, setInputAmount] = React.useState('');
-  const [outputAmount, setOutputAmount] = React.useState('');
-  const [selectedInputBase, setSelectedInputBase] = React.useState<BaseToken>(BNB_BASE);
-  const [selectedOutputBase, setSelectedOutputBase] = React.useState<BaseToken>(TEST63_BASE);
-  const [inputToken, setInputToken] = React.useState<Token | null>(
-    getTokenWithDecimals(BNB_BASE, 18)
-  );
-  const [outputToken, setOutputToken] = React.useState<Token | null>(null);
-  const [isSelectingInput, setIsSelectingInput] = React.useState(false);
-  const [isSelectingOutput, setIsSelectingOutput] = React.useState(false);
-  const [isSwitching, setIsSwitching] = React.useState(false);
-  const [slippage, setSlippage] = React.useState(DEFAULT_SLIPPAGE);
-  const [debouncedInputAmount] = useDebounce(inputAmount, 500);
-  const [isCheckingAllowance, setIsCheckingAllowance] = React.useState(false);
-  const [needsApproval, setNeedsApproval] = React.useState(false);
-  const [isApproving, setIsApproving] = React.useState(false);
-
-  const { data: fetchedOutputDecimals, isLoading: isLoadingOutputDecimals } = useReadContract({
-    abi: erc20Abi,
-    address: selectedOutputBase.address === TEST63_TOKEN_ADDRESS ? TEST63_TOKEN_ADDRESS : undefined,
-    functionName: 'decimals',
-    chainId: BNB_TESTNET_CHAIN_ID,
-    query: { enabled: selectedOutputBase.address === TEST63_TOKEN_ADDRESS },
-  });
-
-  const { data: fetchedInputDecimals, isLoading: isLoadingInputDecimals } = useReadContract({
-    abi: erc20Abi,
-    address: selectedInputBase.address === TEST63_TOKEN_ADDRESS ? TEST63_TOKEN_ADDRESS : undefined,
-    functionName: 'decimals',
-    chainId: BNB_TESTNET_CHAIN_ID,
-    query: { enabled: selectedInputBase.address === TEST63_TOKEN_ADDRESS },
-  });
-
-  React.useEffect(() => {
-    if (selectedInputBase.address === TEST63_TOKEN_ADDRESS) {
-      setInputToken(getTokenWithDecimals(selectedInputBase, fetchedInputDecimals as number | null));
-    } else if (selectedInputBase.address === '0xNative') {
-      setInputToken(getTokenWithDecimals(selectedInputBase, 18));
-    }
-  }, [selectedInputBase, fetchedInputDecimals]);
-
-  React.useEffect(() => {
-    if (selectedOutputBase.address === TEST63_TOKEN_ADDRESS) {
-      setOutputToken(
-        getTokenWithDecimals(selectedOutputBase, fetchedOutputDecimals as number | null)
-      );
-    } else if (selectedOutputBase.address === '0xNative') {
-      setOutputToken(getTokenWithDecimals(selectedOutputBase, 18));
-    }
-  }, [selectedOutputBase, fetchedOutputDecimals]);
-
-  const inputTokenDecimals = inputToken?.decimals;
-  const outputTokenDecimals = outputToken?.decimals;
-  const isLoadingDecimals =
-    (selectedInputBase.address === TEST63_TOKEN_ADDRESS && isLoadingInputDecimals) ||
-    (selectedOutputBase.address === TEST63_TOKEN_ADDRESS && isLoadingOutputDecimals);
-
-  const isMissingDecimals =
-    (selectedInputBase.address !== '0xNative' && inputToken?.decimals === undefined) ||
-    (selectedOutputBase.address !== '0xNative' && outputToken?.decimals === undefined);
-
-  const amountInWei = React.useMemo(() => {
-    try {
-      return debouncedInputAmount && inputTokenDecimals !== undefined
-        ? parseUnits(debouncedInputAmount, inputTokenDecimals)
-        : BigInt(0);
-    } catch {
-      return BigInt(0);
-    }
-  }, [debouncedInputAmount, inputTokenDecimals]);
-
-  const swapPath = React.useMemo((): Address[] => {
-    const inputAddr =
-      selectedInputBase.address === '0xNative'
-        ? WBNB_ADDRESS
-        : (selectedInputBase.address as Address);
-    const outputAddr =
-      selectedOutputBase.address === '0xNative'
-        ? WBNB_ADDRESS
-        : (selectedOutputBase.address as Address);
-    if (inputAddr && outputAddr && inputAddr !== outputAddr) {
-      return [inputAddr, outputAddr];
-    }
-    return [];
-  }, [selectedInputBase, selectedOutputBase]);
-
-  const { data: amountsOutData, isLoading: isLoadingAmountsOut } = useReadContract({
-    abi: uniswapV2RouterAbi,
-    address: UNISWAP_V2_ROUTER_ADDRESS,
-    functionName: 'getAmountsOut',
-    args: [amountInWei, swapPath],
-    chainId: BNB_TESTNET_CHAIN_ID,
-    query: {
-      enabled:
-        amountInWei > BigInt(0) &&
-        swapPath.length === 2 &&
-        inputTokenDecimals !== undefined &&
-        outputTokenDecimals !== undefined &&
-        chain?.id === BNB_TESTNET_CHAIN_ID &&
-        !isMissingDecimals,
-      staleTime: 10_000,
-      refetchInterval: 15_000,
-    },
-  });
-
-  React.useEffect(() => {
-    if (amountsOutData && amountsOutData.length > 1 && outputTokenDecimals !== undefined) {
-      const outputAmountWei = amountsOutData[1];
-      if (typeof outputAmountWei === 'bigint') {
-        const formattedAmount = formatUnits(outputAmountWei, outputTokenDecimals);
-        if (formattedAmount !== outputAmount) {
-          setOutputAmount(formattedAmount);
-        }
-      } else {
-        setOutputAmount('');
-      }
-    } else if (debouncedInputAmount === '0' || debouncedInputAmount === '') {
-      setOutputAmount('');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [amountsOutData, outputTokenDecimals, debouncedInputAmount]);
+  const { address: account } = useAccount();
+  const {
+    inputAmount,
+    setInputAmount,
+    selectedInputBase,
+    setSelectedInputBase,
+    selectedOutputBase,
+    setSelectedOutputBase,
+    isSwitching,
+    handleSwitchTokens,
+  } = useSwapState();
 
   const {
-    data: currentAllowance,
-    refetch: refetchAllowance,
-    isLoading: isLoadingAllowance,
-  } = useReadContract({
+    derivedOutputAmount,
+    inputBalance,
+    inputBalanceBigInt,
+    inputUsdValue,
+    outputUsdValue,
+    displayRate,
+    priceImpact,
+    actualInputDecimals,
+    actualOutputDecimals,
+    error: calculationError,
+    isLoading: isLoadingCalculations,
+    isLoadingAmountsOut,
+    isLoadingInitialRate,
+  } = useSwapCalculations({
+    account,
+    inputAmount,
+    selectedInputBase,
+    selectedOutputBase,
+  });
+
+  const [isSelectingInput, setIsSelectingInput] = React.useState(false);
+  const [isSelectingOutput, setIsSelectingOutput] = React.useState(false);
+  const [slippage, setSlippage] = React.useState(0.5);
+  const [isSlippageDialogOpen, setIsSlippageDialogOpen] = React.useState(false);
+
+  const [isSwapPending, setIsSwapPending] = React.useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = React.useState<Date>(new Date());
+
+  const handleRefreshPrice = React.useCallback(() => {
+    setLastRefreshTime(new Date());
+    const currentInput = inputAmount;
+    setInputAmount(currentInput === '' ? '0' : '');
+    setTimeout(() => setInputAmount(currentInput), 100);
+  }, [inputAmount, setInputAmount]);
+
+  const { writeContract: approveToken } = useWriteContract();
+  const { data: approveWriteHash, isPending: isApprovingTx } = useWriteContract();
+  const {
+    data: approveReceipt,
+    isLoading: isWaitingForApproval,
+    isSuccess: isApprovalSuccess,
+  } = useWaitForTransactionReceipt({
+    hash: approveWriteHash,
+  });
+
+  const isApproving = isApprovingTx || isWaitingForApproval;
+
+  const amountInBigInt = React.useMemo(() => {
+    try {
+      return parseUnits(inputAmount || '0', actualInputDecimals);
+    } catch {
+      return 0n;
+    }
+  }, [inputAmount, actualInputDecimals]);
+
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: selectedInputBase?.address as `0x${string}`,
     abi: erc20Abi,
-    address: inputToken?.address as Address,
     functionName: 'allowance',
-    args: [account as Address, UNISWAP_V2_ROUTER_ADDRESS],
+    args: [account ?? '0x', UNISWAP_V2_ROUTER_ADDRESS],
     chainId: BNB_TESTNET_CHAIN_ID,
     query: {
       enabled:
         !!account &&
-        !!inputToken &&
-        inputToken.address !== '0xNative' &&
-        amountInWei > BigInt(0) &&
-        chain?.id === BNB_TESTNET_CHAIN_ID &&
-        !isMissingDecimals,
+        selectedInputBase?.address !== NATIVE_BNB_ADDRESS &&
+        !!selectedInputBase?.address,
+      refetchInterval: query => (isApprovalSuccess ? 1000 : false),
     },
   });
 
   React.useEffect(() => {
-    setIsCheckingAllowance(isLoadingAllowance);
     if (
-      inputToken &&
-      inputToken.address !== '0xNative' &&
-      amountInWei > BigInt(0) &&
-      typeof currentAllowance === 'bigint' &&
-      currentAllowance < amountInWei
+      isApprovalSuccess &&
+      typeof allowance === 'bigint' &&
+      amountInBigInt > 0n &&
+      allowance >= amountInBigInt
     ) {
-      setNeedsApproval(true);
-    } else {
-      setNeedsApproval(false);
-    }
-  }, [currentAllowance, amountInWei, inputToken, isLoadingAllowance]);
-
-  const {
-    data: approveTxHash,
-    writeContractAsync: approveWrite,
-    isPending: isApprovingWrite,
-    error: approveError,
-  } = useWriteContract();
-
-  const { isLoading: isConfirmingApproval, isSuccess: isApprovalSuccess } =
-    useWaitForTransactionReceipt({
-      hash: approveTxHash,
-      chainId: BNB_TESTNET_CHAIN_ID,
-      query: { enabled: !!approveTxHash },
-    });
-
-  React.useEffect(() => {
-    setIsApproving(isApprovingWrite || isConfirmingApproval);
-
-    if (isApprovalSuccess) {
-      toast.success('Approval successful!');
       refetchAllowance();
-      setNeedsApproval(false);
-      setIsApproving(false);
     }
-    if (approveError) {
-      toast.error(approveError.message || 'Approval failed');
-      console.error('Approval Error:', approveError);
-      setIsApproving(false);
-    }
-  }, [isApprovingWrite, isConfirmingApproval, isApprovalSuccess, approveError, refetchAllowance]);
-
-  const handleSwitchTokens = () => {
-    setIsSwitching(true);
-    const currentInputBase = selectedInputBase;
-    const currentOutputBase = selectedOutputBase;
-    const currentInputAmount = inputAmount;
-    const currentOutputAmount = outputAmount;
-    setSelectedInputBase(currentOutputBase);
-    setSelectedOutputBase(currentInputBase);
-    setInputToken(null);
-    setOutputToken(null);
-    setInputAmount(currentOutputAmount);
-    setOutputAmount(currentInputAmount);
-    setNeedsApproval(false);
-    setTimeout(() => {
-      setIsSwitching(false);
-    }, 300);
-  };
-
-  const handleSelectInputToken = (token: BaseToken) => {
-    if (selectedOutputBase.address === token.address) {
-      setSelectedOutputBase(selectedInputBase);
-      setOutputToken(null);
-    }
-    setSelectedInputBase(token);
-    setInputToken(null);
-    setOutputAmount('');
-    setNeedsApproval(false);
-  };
-
-  const handleSelectOutputToken = (token: BaseToken) => {
-    if (selectedInputBase.address === token.address) {
-      setSelectedInputBase(selectedOutputBase);
-      setInputToken(null);
-    }
-    setSelectedOutputBase(token);
-    setOutputToken(null);
-    setOutputAmount('');
-  };
+  }, [isApprovalSuccess, allowance, amountInBigInt, refetchAllowance]);
 
   const handleApprove = async () => {
-    if (!inputToken || inputToken.address === '0xNative' || !approveWrite) return;
-
-    toast.info('Requesting approval...');
-    try {
-      await approveWrite({
-        address: inputToken.address as Address,
-        abi: erc20Abi,
-        functionName: 'approve',
-        args: [UNISWAP_V2_ROUTER_ADDRESS, maxUint256],
-        chainId: BNB_TESTNET_CHAIN_ID,
-      });
-    } catch (err) {
-      console.error('Approve call failed:', err);
-    }
-  };
-
-  const handleSwap = () => {
-    if (needsApproval) {
-      toast.warning('Please approve the token first.');
+    if (selectedInputBase.address === NATIVE_BNB_ADDRESS) {
+      toast.error('Cannot approve native BNB');
       return;
     }
-    console.log(`Initiating swap with slippage: ${slippage}% ...`);
-    toast.info('Swap function not implemented yet.');
-  };
+    if (!approveToken || !selectedInputBase?.address || isApproving) return;
 
-  const inputBalance = '--';
-  const outputBalance = '--';
-
-  const displayRate = React.useMemo(() => {
-    if (
-      inputToken &&
-      outputToken &&
-      inputToken.decimals !== undefined &&
-      outputToken.decimals !== undefined &&
-      Number(inputAmount) > 0 &&
-      Number(outputAmount) > 0
-    ) {
-      try {
-        const rate = parseFloat(outputAmount) / parseFloat(inputAmount);
-        if (!isNaN(rate) && rate > 0) {
-          const precision = rate < 0.0001 ? 8 : 4;
-          return `1 ${inputToken.symbol} = ${rate.toFixed(precision)} ${outputToken.symbol}`;
-        }
-      } catch {}
+    try {
+      const hash = await approveToken({
+        address: selectedInputBase.address as `0x${string}`,
+        abi: erc20Abi,
+        functionName: 'approve',
+        args: [UNISWAP_V2_ROUTER_ADDRESS as `0x${string}`, maxUint256],
+        chainId: BNB_TESTNET_CHAIN_ID,
+      });
+      toast.success('Token approval transaction sent');
+    } catch (error) {
+      console.error('Error approving token:', error);
+      toast.error('Failed to send approval transaction', {
+        description: (error as Error)?.message,
+      });
     }
-    return null;
-  }, [inputAmount, outputAmount, inputToken, outputToken]);
-
-  const getButtonLabel = () => {
-    if (!account) return 'Connect Wallet';
-    if (chain?.id !== BNB_TESTNET_CHAIN_ID) return `Switch to BNB Testnet`;
-    if (isMissingDecimals) return 'Loading token data...';
-    if (!inputAmount || parseFloat(inputAmount) <= 0) return 'Enter amount';
-    if (isLoadingAmountsOut) return 'Fetching rate...';
-    if (isCheckingAllowance || isApproving)
-      return (
-        <>
-          <LoaderCircleIcon className="mr-2 size-4 animate-spin" /> Approving...
-        </>
-      );
-    if (needsApproval) return `Approve ${inputToken?.symbol}`;
-    return 'Swap';
   };
 
-  const isButtonDisabled =
-    !account ||
-    chain?.id !== BNB_TESTNET_CHAIN_ID ||
-    isMissingDecimals ||
-    (!needsApproval && (!inputAmount || parseFloat(inputAmount) <= 0 || !outputAmount)) ||
-    isLoadingAmountsOut ||
-    isCheckingAllowance ||
-    isApproving;
+  const {
+    data: swapWriteHash,
+    isPending: isSwapTxPending,
+    writeContractAsync: swapAsync,
+  } = useWriteContract();
+
+  const {
+    data: swapReceipt,
+    isLoading: isWaitingForSwapConfirmation,
+    isSuccess: isSwapSuccess,
+    isError: isSwapError,
+  } = useWaitForTransactionReceipt({
+    hash: swapWriteHash,
+  });
+
+  const isSwapping = isSwapTxPending || isWaitingForSwapConfirmation;
+
+  const handleSwap = async () => {
+    if (
+      !account ||
+      !inputAmount ||
+      !derivedOutputAmount ||
+      typeof slippage !== 'number' ||
+      isSwapping ||
+      !swapAsync
+    )
+      return;
+
+    const amountIn = amountInBigInt;
+    if (amountIn <= 0n) {
+      toast.error('Enter an amount to swap');
+      return;
+    }
+    if (inputBalanceBigInt !== undefined && amountIn > inputBalanceBigInt) {
+      toast.error('Insufficient balance');
+      return;
+    }
+
+    let minAmountOut: bigint;
+    try {
+      minAmountOut = parseUnits(
+        (parseFloat(derivedOutputAmount) * (1 - slippage / 100)).toFixed(actualOutputDecimals),
+        actualOutputDecimals
+      );
+      if (minAmountOut <= 0n) throw new Error('Min amount out is zero or negative');
+    } catch (calcError) {
+      console.error('Error calculating minAmountOut:', calcError);
+      toast.error('Invalid derived output amount for slippage calculation.');
+      return;
+    }
+
+    try {
+      setIsSwapPending(true);
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 20);
+
+      const inputIsNative = selectedInputBase.address === NATIVE_BNB_ADDRESS;
+      const outputIsNative = selectedOutputBase.address === NATIVE_BNB_ADDRESS;
+
+      const path = [
+        inputIsNative ? WBNB_ADDRESS : selectedInputBase.address,
+        outputIsNative ? WBNB_ADDRESS : selectedOutputBase.address,
+      ];
+
+      let txHash: `0x${string}` | undefined;
+
+      if (inputIsNative) {
+        txHash = await swapAsync({
+          address: UNISWAP_V2_ROUTER_ADDRESS,
+          abi: uniswapV2RouterAbi,
+          functionName: 'swapExactETHForTokens',
+          args: [minAmountOut, path, account, deadline],
+          value: amountIn,
+          chainId: BNB_TESTNET_CHAIN_ID,
+        });
+      } else if (outputIsNative) {
+        txHash = await swapAsync({
+          address: UNISWAP_V2_ROUTER_ADDRESS,
+          abi: uniswapV2RouterAbi,
+          functionName: 'swapTokensForExactETH',
+          args: [amountIn, minAmountOut, path, account, deadline],
+          chainId: BNB_TESTNET_CHAIN_ID,
+        });
+      } else {
+        txHash = await swapAsync({
+          address: UNISWAP_V2_ROUTER_ADDRESS as `0x${string}`,
+          abi: uniswapV2RouterAbi,
+          functionName: 'swapExactTokensForTokens',
+          args: [amountIn, minAmountOut, path, account, deadline],
+          chainId: BNB_TESTNET_CHAIN_ID,
+        });
+      }
+
+      if (txHash) {
+        toast.success('Swap transaction sent');
+        setInputAmount('');
+      } else {
+        toast.error('Swap initiation failed');
+      }
+    } catch (error) {
+      console.error('Swap error:', error);
+      toast.error('Failed to execute swap', { description: (error as Error)?.message });
+    } finally {
+      setIsSwapPending(false);
+    }
+  };
+
+  const handleSelectToken = (token: BaseToken, type: 'input' | 'output') => {
+    if (type === 'input') {
+      if (token.address === selectedOutputBase.address) {
+        setSelectedOutputBase(selectedInputBase);
+      }
+      setSelectedInputBase(token);
+      setIsSelectingInput(false);
+    } else {
+      if (token.address === selectedInputBase.address) {
+        setSelectedInputBase(selectedOutputBase);
+      }
+      setSelectedOutputBase(token);
+      setIsSelectingOutput(false);
+    }
+    setInputAmount('');
+  };
+
+  const formError = calculationError;
+  const isLoading = isLoadingCalculations || isLoadingInitialRate;
+
+  const isInputTokenNative = selectedInputBase.address === NATIVE_BNB_ADDRESS;
+  const requiresApproval = React.useMemo(() => {
+    if (
+      isInputTokenNative ||
+      typeof allowance !== 'bigint' ||
+      !amountInBigInt ||
+      amountInBigInt <= 0n
+    )
+      return false;
+    return allowance < amountInBigInt;
+  }, [allowance, amountInBigInt, isInputTokenNative]);
+
+  let buttonAction:
+    | 'connect'
+    | 'selectToken'
+    | 'enterAmount'
+    | 'insufficientBalance'
+    | 'approve'
+    | 'swap'
+    | 'loading'
+    | 'error' = 'connect';
+  let buttonText = 'Connect Wallet';
+  let buttonDisabled = false;
+
+  if (account) {
+    if (!selectedInputBase.address || !selectedOutputBase.address) {
+      buttonAction = 'selectToken';
+      buttonText = 'Select Tokens';
+      buttonDisabled = true;
+    } else if (isLoading) {
+      buttonAction = 'loading';
+      buttonText = 'Loading...';
+      buttonDisabled = true;
+    } else if (formError) {
+      buttonAction = 'error';
+      buttonText = formError;
+      buttonDisabled = true;
+    } else if (!inputAmount || amountInBigInt <= 0n) {
+      buttonAction = 'enterAmount';
+      buttonText = 'Enter Amount';
+      buttonDisabled = true;
+    } else if (inputBalanceBigInt !== undefined && amountInBigInt > inputBalanceBigInt) {
+      buttonAction = 'insufficientBalance';
+      buttonText = 'Insufficient Balance';
+      buttonDisabled = true;
+    } else if (requiresApproval) {
+      buttonAction = 'approve';
+      buttonText = `Approve ${selectedInputBase.symbol}`;
+      buttonDisabled = isApproving;
+    } else {
+      buttonAction = 'swap';
+      buttonText = 'Swap';
+      buttonDisabled = isSwapping;
+    }
+  }
+
+  React.useEffect(() => {
+    if (isSwapSuccess) {
+      toast.success('Swap confirmed successfully!');
+      handleRefreshPrice();
+    } else if (isSwapError) {
+      toast.error('Swap transaction failed');
+    }
+  }, [isSwapSuccess, isSwapError, handleRefreshPrice]);
 
   return (
-    <>
-      <Card className="mx-auto w-full max-w-md">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Swap Tokens</CardTitle>
-          <SlippageSettings slippage={slippage} onSlippageChange={setSlippage} />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2 rounded-md border p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-sm">From</span>
-              <span className="text-muted-foreground text-sm">Balance: {inputBalance}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                placeholder="0.0"
-                value={inputAmount}
-                onChange={e => setInputAmount(e.target.value)}
-                className="flex-1 border-0 bg-transparent text-lg font-semibold focus-visible:ring-0 focus-visible:ring-offset-0"
-                disabled={!inputToken || !outputToken || isMissingDecimals || isApproving}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsSelectingInput(true)}
-                className="min-w-[120px] justify-between gap-1.5"
-                disabled={isLoadingDecimals || isApproving}
-              >
-                {isLoadingInputDecimals && selectedInputBase.address === TEST63_TOKEN_ADDRESS
-                  ? '...'
-                  : selectedInputBase.symbol}
-                <ChevronDownIcon className="text-muted-foreground size-4" />
-              </Button>
-            </div>
+    <Card className="bg-card text-card-foreground w-full max-w-md rounded-xl border shadow-lg">
+      <CardHeader className="flex flex-row items-center justify-between border-b">
+        <h2 className="text-lg font-semibold">Swap</h2>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              handleRefreshPrice();
+              refetchAllowance();
+            }}
+            className="text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            title={`Refresh price (last refreshed: ${lastRefreshTime.toLocaleTimeString()})`}
+            disabled={isLoading || isSwapping || isApproving}
+          >
+            {isLoading ? (
+              <LoaderCircleIcon className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCwIcon className="h-4 w-4" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSlippageDialogOpen(true)}
+            className="text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          >
+            <SettingsIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-1 p-3 sm:p-4">
+        <div className="bg-background rounded-lg border p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-xs">You pay</span>
+            <button
+              className="text-muted-foreground hover:text-foreground text-xs disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => {
+                if (inputBalanceBigInt !== undefined) {
+                  setInputAmount(formatUnits(inputBalanceBigInt, actualInputDecimals));
+                }
+              }}
+              disabled={inputBalanceBigInt === undefined || !account}
+            >
+              Balance: {inputBalance}
+            </button>
           </div>
-
-          <div className="flex justify-center">
+          <div className="mt-2 flex items-end justify-between gap-2">
+            <div className="flex-1">
+              <TokenAmountInput
+                value={inputAmount}
+                onChange={setInputAmount}
+                decimals={actualInputDecimals}
+                disabled={!account || isSwapPending || isApproving}
+                placeholder="0"
+                className="placeholder:text-muted-foreground h-10 w-full border-none bg-transparent p-0 text-2xl focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <div className="text-muted-foreground mt-1 h-4 text-xs">{inputUsdValue}</div>
+            </div>
             <Button
               variant="outline"
-              size="icon"
-              className="bg-background hover:bg-muted rounded-full disabled:opacity-50"
-              onClick={handleSwitchTokens}
-              disabled={
-                isSwitching ||
-                !inputToken ||
-                !outputToken ||
-                isMissingDecimals ||
-                isLoadingDecimals ||
-                isApproving
-              }
+              onClick={() => setIsSelectingInput(true)}
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/80 flex h-auto shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-medium shadow-sm"
             >
-              <ArrowDownUpIcon
-                className={cn(
-                  'size-4 transition-transform ease-in-out',
-                  isSwitching && 'rotate-180'
-                )}
-              />
+              {selectedInputBase.logoURI && (
+                <img
+                  src={selectedInputBase.logoURI}
+                  alt={selectedInputBase.symbol}
+                  className="h-6 w-6 rounded-full"
+                />
+              )}
+              <span className="text-base">{selectedInputBase.symbol}</span>
+              <ChevronDownIcon className="text-muted-foreground h-4 w-4" />
             </Button>
           </div>
+        </div>
 
-          <div className="grid gap-2 rounded-md border p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-sm">To</span>
-              <span className="text-muted-foreground text-sm">Balance: {outputBalance}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                placeholder="0.0"
-                value={isLoadingAmountsOut ? 'Loading...' : outputAmount}
-                readOnly
-                className="flex-1 border-0 bg-transparent text-lg font-semibold focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-75"
-                disabled={isLoadingAmountsOut || isMissingDecimals || isApproving}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsSelectingOutput(true)}
-                className="min-w-[120px] justify-between gap-1.5"
-                disabled={isLoadingDecimals || isApproving}
-              >
-                {isLoadingOutputDecimals && selectedOutputBase.address === TEST63_TOKEN_ADDRESS
-                  ? '...'
-                  : selectedOutputBase.symbol}
-                <ChevronDownIcon className="text-muted-foreground size-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="text-muted-foreground h-5 text-center text-sm">
-            {isMissingDecimals && 'Loading token data...'}
-            {!isMissingDecimals &&
-              isLoadingAmountsOut &&
-              inputAmount &&
-              parseFloat(inputAmount) > 0 &&
-              'Fetching rate...'}
-            {!isMissingDecimals && !isLoadingAmountsOut && displayRate && (
-              <span>{displayRate}</span>
-            )}
-            {!isMissingDecimals && !isLoadingAmountsOut && !displayRate && (
-              <span>Slippage: {slippage}%</span>
-            )}
-          </div>
-        </CardContent>
-        <CardFooter>
+        <div className="relative z-10 my-[-14px] flex justify-center">
           <Button
-            size="lg"
-            className="w-full"
-            onClick={needsApproval ? handleApprove : handleSwap}
-            disabled={isButtonDisabled}
+            variant="outline"
+            size="icon"
+            onClick={handleSwitchTokens}
+            disabled={isSwitching}
+            className="border-card bg-background hover:bg-accent h-8 w-8 rounded-full border-2 data-[state=switching]:rotate-180"
+            data-state={isSwitching ? 'switching' : 'idle'}
           >
-            {getButtonLabel()}
+            <ArrowDownIcon className="text-muted-foreground h-4 w-4" />
           </Button>
-        </CardFooter>
-      </Card>
+        </div>
+
+        <div className="bg-background rounded-lg border p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-xs">You receive (estimated)</span>
+          </div>
+          <div className="mt-2 flex items-end justify-between gap-2">
+            <div className="flex-1">
+              <TokenAmountInput
+                value={derivedOutputAmount}
+                onChange={() => {}}
+                decimals={actualOutputDecimals}
+                disabled={true}
+                placeholder="0"
+                className="placeholder:text-muted-foreground h-10 w-full border-none bg-transparent p-0 text-2xl focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <div className="text-muted-foreground mt-1 h-4 text-xs">
+                {isLoadingAmountsOut ? (
+                  <span className="italic">Fetching amount...</span>
+                ) : (
+                  outputUsdValue
+                )}
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setIsSelectingOutput(true)}
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/80 flex h-auto shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-medium shadow-sm"
+            >
+              {selectedOutputBase.logoURI && (
+                <img
+                  src={selectedOutputBase.logoURI}
+                  alt={selectedOutputBase.symbol}
+                  className="h-6 w-6 rounded-full"
+                />
+              )}
+              <span className="text-base">{selectedOutputBase.symbol}</span>
+              <ChevronDownIcon className="text-muted-foreground h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {(displayRate || priceImpact !== null) && (
+          <div className="text-muted-foreground flex h-6 items-center justify-between px-1 pt-2 text-xs">
+            {displayRate ? (
+              <span>{`1 ${selectedInputBase.symbol} ≈ ${displayRate.toFixed(4)} ${selectedOutputBase.symbol}`}</span>
+            ) : isLoading ? (
+              <span className="italic">Loading rate...</span>
+            ) : (
+              <span>&nbsp;</span>
+            )}
+
+            {priceImpact !== null && (
+              <span
+                className={cn(
+                  'flex items-center gap-1',
+                  Math.abs(priceImpact) > 5
+                    ? 'text-destructive'
+                    : Math.abs(priceImpact) > 2
+                      ? 'text-warning-foreground'
+                      : 'text-success-foreground'
+                )}
+                title="Price Impact"
+              >
+                {Math.abs(priceImpact) > 0.01 && <AlertCircleIcon className="h-3 w-3" />}
+                {priceImpact.toFixed(2)}%
+              </span>
+            )}
+          </div>
+        )}
+      </CardContent>
+
+      <CardFooter className="border-t p-4">
+        <Button
+          className="w-full text-lg font-semibold"
+          size="lg"
+          disabled={buttonDisabled || isApproving || isSwapping}
+          onClick={() => {
+            if (buttonAction === 'approve') {
+              handleApprove();
+            } else if (buttonAction === 'swap') {
+              handleSwap();
+            }
+          }}
+        >
+          {(isApproving || isSwapping) && (
+            <LoaderCircleIcon className="mr-2 h-4 w-4 animate-spin" />
+          )}
+          {buttonAction === 'approve' && isApproving
+            ? `Approving ${selectedInputBase.symbol}...`
+            : buttonAction === 'swap' && isSwapping
+              ? 'Processing Swap...'
+              : buttonText}
+        </Button>
+      </CardFooter>
 
       <TokenSelectorDialog
         open={isSelectingInput}
         onOpenChange={setIsSelectingInput}
-        onSelectToken={handleSelectInputToken}
+        onSelectToken={(token: BaseToken) => {
+          handleSelectToken(token, 'input');
+        }}
       />
       <TokenSelectorDialog
         open={isSelectingOutput}
         onOpenChange={setIsSelectingOutput}
-        onSelectToken={handleSelectOutputToken}
+        onSelectToken={(token: BaseToken) => {
+          handleSelectToken(token, 'output');
+        }}
       />
-    </>
+
+      <SlippageSettings
+        open={isSlippageDialogOpen}
+        onOpenChange={setIsSlippageDialogOpen}
+        slippage={slippage}
+        onSlippageChange={setSlippage}
+      />
+    </Card>
   );
 }

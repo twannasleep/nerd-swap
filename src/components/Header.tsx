@@ -3,6 +3,7 @@
 import Link from 'next/link';
 // Import useAccount to conditionally show the network button
 import { useAccount } from 'wagmi';
+import { Button } from './ui/button';
 
 // You might need to declare these custom elements for TypeScript if errors arise.
 // See: https://lit.dev/docs/frameworks/react/#using-custom-elements
@@ -30,7 +31,23 @@ export function Header() {
         >
           Nerd Swap
         </Link>
-        {/* Add navigation links here if needed */}
+        <nav className="hidden md:flex">
+          <ul className="flex space-x-4">
+            <li>
+              <Link href="/" className="text-muted-foreground hover:text-foreground text-sm">
+                Swap
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/web3-test"
+                className="text-muted-foreground hover:text-foreground text-sm"
+              >
+                Test Config
+              </Link>
+            </li>
+          </ul>
+        </nav>
       </div>
       <div className="flex items-center gap-2">
         {/* AppKit web components for wallet interactions */}

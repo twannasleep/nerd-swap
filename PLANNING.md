@@ -1,153 +1,223 @@
-# Frontend Web3 Hometest: Uniswap V2 Swap Form Clone (Nerd Swap)
+# Nerd Swap: Implementation Planning Document
 
 ## Project Overview
 
-Build a simple decentralized application (dApp) frontend that mimics a Uniswap V2 token swap form, interacting with the Uniswap V2 smart contract on the BNB Testnet.
+A dApp frontend that replicates a Uniswap V2 token swap form on BNB Testnet, showcasing frontend development, Web3 integration, and UI/UX design skills.
 
-## Tech Stack (Current Project Setup)
+**Network**: BNB Testnet (RPC: <https://data-seed-prebsc-1-s1.binance.org:8545/>)
 
-- **Framework**: Next.js (App Router) ✓
-- **Language**: TypeScript ✓
-- **Styling**: Tailwind CSS v4 ✓
-- **UI Components**: Radix UI Primitives (via `src/components/ui`) ✓, `lucide-react` for icons ✓
-- **State Management/Data Fetching**: `@tanstack/react-query` ✓
-- **Web3**: `@reown/appkit`, `@reown/appkit-adapter-wagmi`, `@reown/appkit-adapter-solana`, `wagmi`, `viem` ✓
-- **Theming**: `next-themes` ✓
-- **Testing**: Jest ✓
-- **Linting/Formatting**: ESLint, Prettier, Commitlint, Lint-Staged, Husky ✓
-- **Fonts**: Geist Sans, Geist Mono ✓
+## Core Requirements Status
 
-## Core Requirements (Hometest)
+| Requirement          | Status      | Notes                             |
+| -------------------- | ----------- | --------------------------------- |
+| Token selection      | In Progress | Basic UI components exist         |
+| Amount input         | In Progress | TokenAmountInput component exists |
+| Rate calculation     | In Progress | useSwapCalculations hook exists   |
+| Swap execution       | In Progress | Basic structure in SwapForm.tsx   |
+| Transaction feedback | In Progress | Basic toast notifications exist   |
 
-1. **Wallet Connection:**
-   - Connect to MetaMask (or other wallets supported by AppKit) on BNB Testnet.
-   - Display wallet connection status.
-2. **Swap Form UI:**
-   - Select two tokens: BNB (native) and a test ERC-20 token (TEST63: `0xfe113952C81D14520a8752C87c47f79564892bA3`).
-   - Input field for the "input" token amount.
-   - Display the calculated "output" token amount based on the Uniswap V2 pair rate.
-   - Display the estimated swap rate (e.g., "1 BNB = X TEST63").
-   - "Switch" button to reverse input/output tokens.
-   - "Swap" button to initiate the transaction.
-3. **Smart Contract Interaction:**
-   - Use `viem` (provided via `wagmi`) to interact with contracts.
-   - Interact with the Uniswap V2 Router contract on BNB Testnet (`0xD99D1c33F9fC3444f8101754aBC46c52416550D1`).
-   - Use the Router ABI to fetch exchange rates (e.g., `getAmountsOut`) and execute swaps (e.g., `swapExactTokensForTokens` or `swapExactETHForTokens`).
-   - Handle ERC-20 token approvals if necessary before swapping.
-4. **Transaction Feedback:**
-   - Show transaction status (Pending, Success, Failed) using notifications or UI elements.
-5. **UI/UX:**
-   - Clean, intuitive interface.
-   - Responsive design (desktop/mobile).
+## Components Status
 
-## Bonus Features (Optional)
+| Component           | Status      | Description                                |
+| ------------------- | ----------- | ------------------------------------------ |
+| SwapForm            | In Progress | Main swap interface container              |
+| TokenAmountInput    | In Progress | Input field for token amounts              |
+| TokenSelectorDialog | In Progress | Modal for selecting tokens                 |
+| SlippageSettings    | In Progress | Settings for slippage tolerance            |
+| SwapButton          | Not Started | Button to execute swap transaction         |
+| PriceDisplay        | Not Started | Shows exchange rate between tokens         |
+| TransactionStatus   | Not Started | Shows status of pending transactions       |
+| ErrorDisplay        | Not Started | Displays validation and transaction errors |
+| NetworkStatus       | Completed   | Shows network connection status            |
+| ContractStatus      | Completed   | Verifies contract integration              |
 
-1. **Exact Input / Exact Output:**
-   - Add UI toggle/indicator for `exact_in` vs `exact_out`.
-   - Implement `exact_in` logic (`swapExactTokensForTokens` / `swapExactETHForTokens`).
-   - Implement `exact_out` logic (`swapTokensForExactTokens` / `swapETHForExactTokens`).
-   - Fetch pair reserves dynamically using the Uniswap V2 Pair contract ABI.
-   - Handle slippage tolerance (e.g., 1-3%) by calculating min/max amounts for swap functions.
-2. **Unit Tests:**
-   - Write 1-2 unit tests (Jest/React Testing Library) for:
-     - Token selection logic.
-     - Amount calculation logic.
-     - UI component rendering.
+## Hooks Status
 
-## Implementation Plan (Mapped to Requirements)
+| Hook                | Status      | Description                       |
+| ------------------- | ----------- | --------------------------------- |
+| useSwapState        | In Progress | Manages swap form state           |
+| useSwapCalculations | In Progress | Calculates swap rates and amounts |
+| useTokenBalances    | Not Started | Fetches token balances            |
+| useTokenAllowance   | Not Started | Manages token approvals           |
+| useSwapTransaction  | Not Started | Executes swap transactions        |
 
-### Phase 1: Setup & Core UI [✓]
+## Current Development Tasks
 
-- [✓] Base Project Setup (Next.js, TS, Tailwind, Radix, Fonts, Linting)
-- [✓] Theming (`next-themes`, Dark Mode)
-- [✓] Header Component with Logo
-- [✓] Web3 Dependencies Installed (`@reown/appkit`, `wagmi`, `viem`, etc.)
+| Task                            | Assignee | Status      | Priority | Est. Completion |
+| ------------------------------- | -------- | ----------- | -------- | --------------- |
+| Verify BNB Testnet config       |          | Completed   | High     |                 |
+| Complete token balance display  |          | Not Started | High     |                 |
+| Finish swap transaction logic   |          | Not Started | High     |                 |
+| Improve TokenSelectorDialog     |          | Not Started | Medium   |                 |
+| Implement transaction status UI |          | Not Started | Medium   |                 |
+| Setup slippage settings UI      |          | Not Started | Medium   |                 |
+| Create unit tests               |          | Not Started | Low      |                 |
+| Document components             |          | Not Started | Low      |                 |
 
-### Phase 2: Wallet Connection & Basic Swap UI [✓]
+## Implementation Phases
 
-- [✓] Wallet Connection (`@reown/appkit` configured and `<appkit-button>` in Header)
-- [✓] Create Swap Form Component (`src/features/swap/components/SwapForm.tsx`)
-  - [✓] Add Token Selection Dialog (`TokenSelectorDialog.tsx`)
-  - [✓] Integrate Token Selection into Swap Form
-  - [✓] Add Input fields for amounts
-  - [✓] Add "Switch Tokens" button functionality (with animation)
-  - [✓] Add Slippage Settings UI (`SlippageSettings.tsx`)
-  - [✓] Integrate Slippage Settings into Swap Form
-  - [✓] Add "Swap" button (needs enabling logic)
+### Phase 1: Core Web3 Integration (High Priority)
 
-### Phase 3: Contract Interaction - Rate & Swap Logic [✓ - Partially]
+- [x] Project setup with Next.js, TypeScript, and Tailwind
+- [x] Install required dependencies
+- [x] Setup shadcn/ui components
+- [x] Verify BNB Testnet configuration
+  - [x] Confirm RPC connection
+  - [x] Test network switching
+- [x] Wallet connection integration
+  - [x] Connect wallet button
+  - [x] Display connected account
+- [x] Contract integration
+  - [x] Router address configuration (0xD99D1c33F9fC3444f8101754aBC46c52416550D1)
+  - [x] Add TEST63 token contract (0xfe113952C81D14520a8752C87c47f79564892bA3)
+  - [x] Implement contract ABIs
 
-- [✓] Define Constants (Router Address, Token Addresses, Minimal ABIs)
-- [✓] Implement `getAmountsOut` logic using `wagmi`/`viem` hooks to fetch rates.
-- [✓] Update UI to display calculated amounts and swap rate dynamically.
-- [✓] Handle fetching/managing token decimals.
-- [✓] Implement logic to check/request token approval (`approve` function).
-- [ ] Implement core swap execution (`swapExactTokensForTokens` / `swapExactETHForTokens`).
-- [✓] Enable "Swap" / "Approve" button based on allowance state (Needs balance checks).
+### Phase 2: Swap Core Functionality (High Priority)
 
-### Phase 4: Transaction Handling & Feedback [✓ - Partially]
+- [ ] Token balance display
+  - [ ] BNB balance
+  - [ ] TEST63 token balance
+- [ ] Token price calculation
+  - [ ] Implement getAmountsOut
+  - [ ] Price impact calculation
+  - [ ] Price refresh mechanism
+- [ ] Swap transaction logic
+  - [ ] BNB to Token (swapExactETHForTokens)
+  - [ ] Token to BNB (swapExactTokensForETH)
+  - [ ] Token to Token (swapExactTokensForTokens)
+- [ ] Token approval flow
+  - [ ] Check allowance
+  - [ ] Request approval
+  - [ ] Approval confirmation
 
-- [✓] Install Toaster (`sonner`) for notifications.
-- [✓] Display feedback for slippage settings changes.
-- [✓] Display feedback for approval initiation/success/failure.
-- [ ] Use `wagmi` hooks (e.g., `useWaitForTransactionReceipt`) to track swap transaction status.
-- [ ] Display swap transaction status feedback (Pending, Success, Failed).
-- [ ] Handle potential swap transaction errors gracefully.
+### Phase 3: UI Enhancement (Medium Priority)
 
-### Phase 5: UI/UX Refinement [✓ - Partially]
+- [ ] Complete token selection interface
+  - [ ] Token search functionality
+  - [ ] Token list with balances
+  - [ ] Token selection confirmation
+- [ ] Improve amount input UX
+  - [ ] Max button
+  - [ ] Input validation
+  - [ ] USD value display
+- [ ] Transaction status UI
+  - [ ] Loading indicators
+  - [ ] Success/error states
+  - [ ] Transaction details
+- [ ] Responsive design improvements
+  - [ ] Mobile-friendly layout
+  - [ ] Touch optimizations
 
-- [✓] Dark Mode implemented
-- [✓] Add loading states for fetching rates.
-- [✓] Add loading/pending state for approval button.
-- [ ] Ensure form responsiveness.
-- [ ] Add loading states for pending swap transaction.
-- [ ] Refine error messages.
+### Phase 4: Bonus Features (Lower Priority)
 
-### Phase 6: Bonus Features (Optional) [ ]
+- [ ] Exact In/Out Implementation
+  - [ ] Toggle between modes
+  - [ ] swapExactTokensForTokens implementation
+  - [ ] swapTokensForExactTokens implementation
+- [ ] Slippage tolerance settings
+  - [ ] UI for settings
+  - [ ] Apply to calculations
+  - [ ] Persist preferences
+- [ ] Additional token support
+  - [ ] Extended token list
+  - [ ] Token import feature
+- [ ] Price chart integration
+  - [ ] Historical price data
+  - [ ] Visual chart component
 
-- [ ] Implement Exact In / Exact Out toggle and logic.
-- [✓] Implement Slippage handling UI (`SlippageSettings.tsx`).
-- [ ] Implement Slippage logic in swap execution.
-- [ ] Add Unit Tests.
+### Phase 5: Testing & Refinement (Ongoing)
 
-### Phase 7: Documentation [✓]
+- [ ] Unit tests
+  - [ ] Token selection logic
+  - [ ] Amount calculation
+  - [ ] UI component rendering
+- [ ] End-to-end testing
+  - [ ] Complete swap flow
+  - [ ] Error handling
+- [ ] Performance optimization
+  - [ ] Bundle size optimization
+  - [ ] Loading speed improvements
+- [ ] Documentation
+  - [ ] README update
+  - [ ] Setup instructions
+  - [ ] Usage guide
 
-- [✓] Basic README exists
-- [✓] PLANNING.md updated
-- [ ] Add detailed setup instructions to README.md.
-- [ ] Add code comments where necessary.
+## Delivery Preparation
 
-## Constants Needed
+### Documentation
 
-```typescript
-// BNB Testnet
-const BNB_TESTNET_CHAIN_ID = 97;
-const BNB_TESTNET_RPC = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
+- [ ] Update README.md
+  - [ ] Project overview
+  - [ ] Technologies used
+  - [ ] Setup instructions
+  - [ ] Usage guide
+  - [ ] Screenshots
+- [ ] Code comments
+  - [ ] Document complex logic
+  - [ ] Explain contract interactions
+  - [ ] Add JSDoc to hooks and components
 
-// Contract Addresses (BNB Testnet)
-const UNISWAP_V2_ROUTER_ADDRESS = '0xD99D1c33F9fC3444f8101754aBC46c52416550D1' as const;
-const WBNB_ADDRESS = '0xae13d989dac2f0debff460ac112a837c89baa7cd' as const; // Wrapped BNB on Testnet
-const TEST63_TOKEN_ADDRESS = '0xfe113952C81D14520a8752C87c47f79564892bA3' as const;
+### Deployment
 
-// ABIs (Minimal versions added to constants.ts)
-const UNISWAP_V2_ROUTER_ABI = [...]; // In constants.ts
-const ERC20_ABI = [...]; // In constants.ts
-// const UNISWAP_V2_PAIR_ABI = [...]; // For bonus: fetching reserves
-```
+- [ ] Setup Vercel/Netlify project
+- [ ] Configure environment variables
+- [ ] Initial build and test
+- [ ] Final deployment
+- [ ] Share live demo URL
 
-## Progress Tracking
+### Final Testing
 
-- [✓] Phase 1: Setup & Core UI
-- [✓] Phase 2: Wallet Connection & Basic Swap UI
-- [✓] Phase 3: Contract Interaction - Rate & Swap Logic (Rate fetching & Approval logic done)
-- [✓] Phase 4: Transaction Handling & Feedback (Toaster setup, Approval feedback done)
-- [✓] Phase 5: UI/UX Refinement (Dark mode, Rate/Approval loading states)
-- [ ] Phase 6: Bonus Features (Slippage UI done)
-- [✓] Phase 7: Documentation
+- [ ] Cross-browser testing
+  - [ ] Chrome
+  - [ ] Firefox
+  - [ ] Safari
+- [ ] Mobile testing
+  - [ ] iOS Safari
+  - [ ] Android Chrome
+- [ ] Test with MetaMask
+- [ ] Test with other wallets
 
-## Next Steps
+### GitHub Finalization
 
-1. Implement the core swap execution function (`handleSwap`) using `wagmi` hooks (Phase 3).
-2. Implement swap transaction status tracking and feedback using `sonner` (Phase 4).
-3. Add balance fetching and checks for UI display and swap/approve button disabling.
-4. Refine UI/UX (responsiveness, loading states for swap).
+- [ ] Share private repo with evaluators:
+  - [ ] @tiendn
+  - [ ] @meliodas95
+  - [ ] @kanechan25
+- [ ] Final code cleanup
+- [ ] Organize project files
+- [ ] Add planning.md to repository
+
+## Technical Considerations
+
+### Web3 Integration
+
+- Use wagmi hooks for contract interactions
+- Implement proper error handling for blockchain interactions
+- Consider gas estimation and transaction optimization
+
+### UI/UX Design
+
+- Follow shadcn/ui design patterns
+- Ensure responsive design works on all screen sizes
+- Implement proper loading states and error handling
+- Consider accessibility for all UI components
+
+### Performance
+
+- Optimize re-renders
+- Cache blockchain queries with TanStack Query
+- Minimize external requests
+
+## Timeline Estimate
+
+- Phase 1: 1-2 days
+- Phase 2: 2-3 days
+- Phase 3: 1-2 days
+- Phase 4: 2-3 days (optional)
+- Phase 5: Ongoing
+
+## Dependencies and Resources
+
+- Uniswap V2 Router Documentation
+- BNB Testnet Faucet: <https://testnet.bnbchain.org/faucet-smart>
+- Block Explorer: <https://testnet.bscscan.com>
