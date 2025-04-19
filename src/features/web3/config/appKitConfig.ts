@@ -6,8 +6,7 @@ import { AppKitNetwork, bscTestnet } from '@reown/appkit/networks';
 export const networks = [bscTestnet] as const satisfies [AppKitNetwork, ...AppKitNetwork[]];
 
 // Get projectId - using the same env variable across the application
-export const projectId =
-  process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || process.env.NEXT_PUBLIC_PROJECT_ID || '';
+export const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '';
 
 if (!projectId) {
   console.warn(

@@ -5,7 +5,7 @@ import { type AppKitNetwork, bscTestnet, mainnet } from '@reown/appkit/networks'
 import { cookieStorage, createStorage } from '@wagmi/core';
 
 // Get projectId from https://cloud.reown.com
-export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID || '';
+export const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '';
 
 if (!projectId) {
   throw new Error('Project ID is not defined');
