@@ -1,12 +1,12 @@
 'use client';
 
+import { erc20Abi } from 'viem';
 import { useAccount, useChainId, useReadContract } from 'wagmi';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   BNB_TESTNET_CHAIN_ID,
   TEST63_TOKEN_ADDRESS,
   UNISWAP_V2_ROUTER_ADDRESS,
-  erc20Abi,
 } from '@/features/swap/constants';
 
 export function ContractStatus() {

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { AlertCircleIcon, ImportIcon, SearchIcon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { erc20Abi } from 'viem';
 import { useAccount, useReadContract } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,9 +20,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { BNB_TESTNET_CHAIN_ID, NATIVE_BNB_ADDRESS, erc20Abi } from '../constants';
+import { BNB_TESTNET_CHAIN_ID, BaseToken, NATIVE_BNB_ADDRESS } from '../constants';
 import { useTokenBalances } from '../hooks/useTokenBalances';
-import { BaseToken } from '../types';
 
 interface TokenSelectorDialogProps {
   open: boolean;

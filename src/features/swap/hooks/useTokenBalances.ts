@@ -1,14 +1,7 @@
 import * as React from 'react';
-import { formatUnits } from 'viem';
+import { erc20Abi, formatUnits } from 'viem';
 import { useBalance, useReadContract } from 'wagmi';
-import {
-  BNB_BASE,
-  BNB_TESTNET_CHAIN_ID,
-  NATIVE_BNB_ADDRESS,
-  TEST63_BASE,
-  erc20Abi,
-} from '../constants';
-import type { BaseToken } from '../types';
+import { BNB_TESTNET_CHAIN_ID, BaseToken, NATIVE_BNB_ADDRESS, TEST63_BASE } from '../constants';
 
 interface UseTokenBalancesProps {
   account?: `0x${string}` | undefined;

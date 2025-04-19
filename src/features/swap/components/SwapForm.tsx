@@ -11,24 +11,21 @@ import {
   SettingsIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatUnits, maxUint256, parseUnits } from 'viem';
+import { erc20Abi, formatUnits, maxUint256, parseUnits } from 'viem';
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import {
   BNB_TESTNET_CHAIN_ID,
+  BaseToken,
   NATIVE_BNB_ADDRESS,
   UNISWAP_V2_ROUTER_ADDRESS,
-  WBNB_ADDRESS,
-  erc20Abi,
-  uniswapV2RouterAbi,
 } from '../constants';
 import { useSwapCalculations } from '../hooks/useSwapCalculations';
 import { useSwapState } from '../hooks/useSwapState';
 import { useSwapTransaction } from '../hooks/useSwapTransaction';
 import { useTokenBalances } from '../hooks/useTokenBalances';
-import { BaseToken } from '../types';
 import { SlippageSettings } from './SlippageSettings';
 import { TokenAmountInput } from './TokenAmountInput';
 import { TokenSelectorDialog } from './TokenSelectorDialog';

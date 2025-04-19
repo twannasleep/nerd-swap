@@ -1,14 +1,13 @@
 import * as React from 'react';
 import { useDebounce } from 'use-debounce';
-import { formatUnits, parseUnits } from 'viem';
+import { erc20Abi, formatUnits, parseUnits } from 'viem';
 import { useReadContract } from 'wagmi';
 import {
   BNB_TESTNET_CHAIN_ID,
+  type BaseToken,
   UNISWAP_V2_ROUTER_ADDRESS,
-  erc20Abi,
   uniswapV2RouterAbi,
 } from '../constants';
-import type { BaseToken } from '../types';
 import { SwapMode } from './useSwapState';
 
 // Mock exchange rate for USD (in a real app, fetch this from an API)
@@ -63,7 +62,7 @@ export function useSwapCalculations({
     address: selectedInputBase.address as `0x${string}`,
     abi: erc20Abi,
     functionName: 'balanceOf',
-    args: [account!],
+    args: account ? [account] : undefined,
     chainId: BNB_TESTNET_CHAIN_ID,
     query: {
       enabled: !!account && !!selectedInputBase.address,
@@ -116,7 +115,7 @@ export function useSwapCalculations({
   const { data: amountsIn, isLoading: isLoadingAmountsIn } = useReadContract({
     address: UNISWAP_V2_ROUTER_ADDRESS as `0x${string}`,
     abi: uniswapV2RouterAbi,
-    functionName: 'getAmountsIn' as any,
+    functionName: 'getAmountsIn',
     args: [parsedDebouncedOutputAmount, [selectedInputBase.address, selectedOutputBase.address]],
     chainId: BNB_TESTNET_CHAIN_ID,
     query: {
@@ -132,14 +131,14 @@ export function useSwapCalculations({
   // Update derived amounts when calculations change
   React.useEffect(() => {
     if (swapMode === 'exactIn') {
-      if (amountsOut?.[1] && isInputAmountValid) {
+      if (amountsOut && Array.isArray(amountsOut) && amountsOut[1] && isInputAmountValid) {
         setDerivedOutputAmount(formatUnits(BigInt(amountsOut[1].toString()), actualOutputDecimals));
         setDerivedInputAmount('');
       } else {
         setDerivedOutputAmount('');
       }
     } else if (swapMode === 'exactOut') {
-      if (amountsIn?.[0] && isOutputAmountValid) {
+      if (amountsIn && Array.isArray(amountsIn) && amountsIn[0] && isOutputAmountValid) {
         setDerivedInputAmount(formatUnits(BigInt(amountsIn[0].toString()), actualInputDecimals));
         setDerivedOutputAmount('');
       } else {
@@ -200,7 +199,7 @@ export function useSwapCalculations({
   });
 
   const initialRate = React.useMemo(() => {
-    if (initialAmountsOut?.[1]) {
+    if (initialAmountsOut && Array.isArray(initialAmountsOut) && initialAmountsOut[1]) {
       try {
         const outputForOneUnit = formatUnits(
           BigInt(initialAmountsOut[1].toString()),
@@ -252,6 +251,29 @@ export function useSwapCalculations({
   ]);
 
   // Calculate price impact
+  const calculatePriceImpact = React.useCallback(
+    (inputAmt: string, outputAmt: string) => {
+      const inputRate =
+        USD_EXCHANGE_RATES[selectedInputBase.symbol as keyof typeof USD_EXCHANGE_RATES] || 0;
+      const outputRate =
+        USD_EXCHANGE_RATES[selectedOutputBase.symbol as keyof typeof USD_EXCHANGE_RATES] || 0;
+      if (inputRate > 0 && outputRate > 0) {
+        const inputValueUsd = parseFloat(inputAmt) * inputRate;
+        const outputValueUsd = parseFloat(outputAmt) * outputRate;
+        if (inputValueUsd > 0) {
+          const impact = ((inputValueUsd - outputValueUsd) / inputValueUsd) * 100;
+          setPriceImpact(impact);
+        } else {
+          setPriceImpact(null);
+        }
+      } else {
+        setPriceImpact(null);
+      }
+    },
+    [selectedInputBase.symbol, selectedOutputBase.symbol]
+  );
+
+  // Price impact calculation
   React.useEffect(() => {
     if (swapMode === 'exactIn' && inputAmount && derivedOutputAmount) {
       calculatePriceImpact(inputAmount, derivedOutputAmount);
@@ -265,29 +287,9 @@ export function useSwapCalculations({
     outputAmount,
     derivedInputAmount,
     derivedOutputAmount,
-    selectedInputBase.symbol,
-    selectedOutputBase.symbol,
     swapMode,
+    calculatePriceImpact,
   ]);
-
-  const calculatePriceImpact = (inputAmt: string, outputAmt: string) => {
-    const inputRate =
-      USD_EXCHANGE_RATES[selectedInputBase.symbol as keyof typeof USD_EXCHANGE_RATES] || 0;
-    const outputRate =
-      USD_EXCHANGE_RATES[selectedOutputBase.symbol as keyof typeof USD_EXCHANGE_RATES] || 0;
-    if (inputRate > 0 && outputRate > 0) {
-      const inputValueUsd = parseFloat(inputAmt) * inputRate;
-      const outputValueUsd = parseFloat(outputAmt) * outputRate;
-      if (inputValueUsd > 0) {
-        const impact = ((inputValueUsd - outputValueUsd) / inputValueUsd) * 100;
-        setPriceImpact(impact);
-      } else {
-        setPriceImpact(null);
-      }
-    } else {
-      setPriceImpact(null);
-    }
-  };
 
   // Loading states
   const isLoadingDecimals = isLoadingInputDecimals || isLoadingOutputDecimals;
@@ -344,6 +346,7 @@ export function useSwapCalculations({
     inputBalance,
     isLoadingInputBalance,
     actualInputDecimals,
+    isLoadingInputDecimals,
     swapMode,
   ]);
 
