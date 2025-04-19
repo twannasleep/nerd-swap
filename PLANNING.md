@@ -92,21 +92,21 @@ A dApp frontend that replicates a Uniswap V2 token swap form on BNB Testnet, sho
 
 ### Phase 3: UI Enhancement (Medium Priority)
 
-- [ ] Complete token selection interface
-  - [ ] Token search functionality
-  - [ ] Token list with balances
-  - [ ] Token selection confirmation
-- [ ] Improve amount input UX
-  - [ ] Max button
-  - [ ] Input validation
-  - [ ] USD value display
-- [ ] Transaction status UI
-  - [ ] Loading indicators
-  - [ ] Success/error states
-  - [ ] Transaction details
-- [ ] Responsive design improvements
-  - [ ] Mobile-friendly layout
-  - [ ] Touch optimizations
+- [x] Complete token selection interface
+  - [x] Token search functionality
+  - [x] Token list with balances
+  - [x] Token selection confirmation
+- [x] Improve amount input UX
+  - [x] Max button
+  - [x] Input validation
+  - [x] USD value display
+- [x] Transaction status UI
+  - [x] Loading indicators
+  - [x] Success/error states
+  - [x] Transaction details
+- [x] Responsive design improvements
+  - [x] Mobile-friendly layout
+  - [x] Touch optimizations
 
 ### Phase 4: Bonus Features (Lower Priority)
 
@@ -114,12 +114,12 @@ A dApp frontend that replicates a Uniswap V2 token swap form on BNB Testnet, sho
   - [ ] Toggle between modes
   - [ ] swapExactTokensForTokens implementation
   - [ ] swapTokensForExactTokens implementation
-- [ ] Slippage tolerance settings
-  - [ ] UI for settings
-  - [ ] Apply to calculations
-  - [ ] Persist preferences
+- [x] Slippage tolerance settings
+  - [x] UI for settings
+  - [x] Apply to calculations
+  - [x] Persist preferences
 - [ ] Additional token support
-  - [ ] Extended token list
+  - [x] Extended token list
   - [ ] Token import feature
 - [ ] Price chart integration
   - [ ] Historical price data

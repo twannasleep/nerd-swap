@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { formatUnits, parseUnits } from 'viem';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface TokenAmountInputProps {
   value: string;
@@ -10,6 +12,11 @@ interface TokenAmountInputProps {
   disabled?: boolean;
   className?: string;
   maxValue?: bigint | undefined;
+  showMaxButton?: boolean;
+  onMaxClick?: () => void;
+  usdValue?: string;
+  showUsdValue?: boolean;
+  isCalculatingUsd?: boolean;
 }
 
 export function TokenAmountInput({
@@ -20,6 +27,11 @@ export function TokenAmountInput({
   disabled = false,
   className,
   maxValue,
+  showMaxButton = false,
+  onMaxClick,
+  usdValue,
+  showUsdValue = false,
+  isCalculatingUsd = false,
 }: TokenAmountInputProps) {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
@@ -64,21 +76,51 @@ export function TokenAmountInput({
     return value.replace(/\.?0+$/, '');
   }, [value]);
 
+  const handleMaxClick = React.useCallback(() => {
+    if (onMaxClick) {
+      onMaxClick();
+    } else if (maxValue !== undefined) {
+      // If no onMaxClick handler provided but maxValue is available, use it directly
+      onChange(formatUnits(maxValue, decimals));
+    }
+  }, [onMaxClick, maxValue, onChange, decimals]);
+
   return (
-    <Input
-      type="text"
-      inputMode="decimal"
-      pattern="^[0-9]*[.]?[0-9]*$"
-      placeholder={placeholder}
-      value={displayValue}
-      onChange={handleChange}
-      disabled={disabled}
-      className={className}
-      autoComplete="off"
-      autoCorrect="off"
-      spellCheck={false}
-      // Prevent scroll from changing the value
-      onWheel={e => e.currentTarget.blur()}
-    />
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <Input
+          type="text"
+          inputMode="decimal"
+          pattern="^[0-9]*[.]?[0-9]*$"
+          placeholder={placeholder}
+          value={displayValue}
+          onChange={handleChange}
+          disabled={disabled}
+          className={cn('flex-1', showMaxButton && 'rounded-r-none', className)}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          // Prevent scroll from changing the value
+          onWheel={e => e.currentTarget.blur()}
+        />
+        {showMaxButton && (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className={cn('h-full rounded-l-none', disabled && 'cursor-not-allowed opacity-50')}
+            onClick={handleMaxClick}
+            disabled={disabled || !maxValue}
+          >
+            MAX
+          </Button>
+        )}
+      </div>
+      {showUsdValue && (
+        <div className="text-muted-foreground h-4 text-xs">
+          {isCalculatingUsd ? 'Calculating...' : usdValue || '$0.00'}
+        </div>
+      )}
+    </div>
   );
 }

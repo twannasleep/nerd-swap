@@ -4,6 +4,7 @@ import * as React from 'react';
 import {
   AlertCircleIcon,
   ArrowDownIcon,
+  CheckCircleIcon,
   ChevronDownIcon,
   LoaderCircleIcon,
   RefreshCwIcon,
@@ -287,52 +288,46 @@ export function SwapForm() {
   }, [isSwapSuccess, isSwapError, handleRefreshPrice, refetchAllBalances, setInputAmount]);
 
   return (
-    <Card className="bg-card text-card-foreground w-full max-w-md rounded-xl border shadow-lg">
-      <CardHeader className="flex flex-row items-center justify-between border-b">
-        <h2 className="text-lg font-semibold">Swap</h2>
+    <Card className="mx-auto w-full max-w-md overflow-hidden sm:rounded-xl">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-4">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold">Swap</h2>
+          {calculationError && <AlertCircleIcon className="text-destructive h-4 w-4" />}
+        </div>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => {
-              handleRefreshPrice();
-              refetchAllowance();
-            }}
-            className="text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            title={`Refresh price (last refreshed: ${lastRefreshTime.toLocaleTimeString()})`}
-            disabled={isLoading || isSwapping || isApproving}
+            className="hover:bg-accent hover:text-accent-foreground text-muted-foreground h-8 w-8 rounded-full"
+            onClick={handleRefreshPrice}
+            disabled={isLoadingCalculations || isSwapping || isSwapPending}
           >
-            {isLoading ? (
-              <LoaderCircleIcon className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCwIcon className="h-4 w-4" />
-            )}
+            <RefreshCwIcon
+              className={cn('h-4 w-4', isLoadingCalculations && 'animate-spin')}
+              data-state={lastRefreshTime.toISOString()}
+            />
+            <span className="sr-only">Refresh price</span>
           </Button>
           <Button
             variant="ghost"
             size="icon"
+            className="hover:bg-accent hover:text-accent-foreground text-muted-foreground h-8 w-8 rounded-full"
             onClick={() => setIsSlippageDialogOpen(true)}
-            className="text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           >
             <SettingsIcon className="h-4 w-4" />
+            <span className="sr-only">Settings</span>
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-1 p-3 sm:p-4">
-        <div className="bg-background rounded-lg border p-3">
+
+      <CardContent className="space-y-3 p-3 sm:p-4">
+        {/* From Input Token */}
+        <div className="bg-background rounded-lg border p-3 sm:p-4">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-xs">You pay</span>
-            <button
-              className="text-muted-foreground hover:text-foreground text-xs disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={() => {
-                if (currentInputBalance.formatted !== '0') {
-                  setInputAmount(currentInputBalance.formatted);
-                }
-              }}
-              disabled={currentInputBalance.formatted === '0' || !account}
-            >
+            <span className="text-muted-foreground text-xs">From</span>
+            <span className="text-muted-foreground text-xs">
               Balance: {currentInputBalance.formatted}
-            </button>
+            </span>
           </div>
           <div className="mt-2 flex items-end justify-between gap-2">
             <div className="flex-1">
@@ -340,26 +335,53 @@ export function SwapForm() {
                 value={inputAmount}
                 onChange={setInputAmount}
                 decimals={actualInputDecimals}
-                disabled={!account || isSwapPending || isApproving}
+                disabled={isSwapping || isSwapPending}
                 placeholder="0"
-                className="placeholder:text-muted-foreground h-10 w-full border-none bg-transparent p-0 text-2xl focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+                className="placeholder:text-muted-foreground h-10 w-full border-none bg-transparent p-0 text-xl focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 sm:text-2xl"
+                maxValue={inputBalanceBigInt}
+                showMaxButton={
+                  !isSwapping &&
+                  !isSwapPending &&
+                  !!inputBalanceBigInt &&
+                  BigInt(inputBalanceBigInt) > 0
+                }
+                onMaxClick={() => {
+                  if (inputBalanceBigInt) {
+                    // If BNB, leave some for gas
+                    if (
+                      selectedInputBase.address === NATIVE_BNB_ADDRESS &&
+                      inputBalanceBigInt > parseUnits('0.01', 18)
+                    ) {
+                      setInputAmount(
+                        formatUnits(
+                          inputBalanceBigInt - parseUnits('0.01', 18),
+                          actualInputDecimals
+                        )
+                      );
+                    } else {
+                      setInputAmount(formatUnits(inputBalanceBigInt, actualInputDecimals));
+                    }
+                  }
+                }}
+                usdValue={inputUsdValue}
+                showUsdValue={true}
+                isCalculatingUsd={isLoadingCalculations}
               />
-              <div className="text-muted-foreground mt-1 h-4 text-xs">{inputUsdValue}</div>
             </div>
             <Button
               variant="outline"
               onClick={() => setIsSelectingInput(true)}
-              className="bg-secondary text-secondary-foreground hover:bg-secondary/80 flex h-auto shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-medium shadow-sm"
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/80 flex h-auto shrink-0 items-center gap-1 rounded-full px-2 py-1.5 text-xs font-medium shadow-sm sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
             >
               {selectedInputBase.logoURI && (
                 <img
                   src={selectedInputBase.logoURI}
                   alt={selectedInputBase.symbol}
-                  className="h-6 w-6 rounded-full"
+                  className="h-5 w-5 rounded-full sm:h-6 sm:w-6"
                 />
               )}
-              <span className="text-base">{selectedInputBase.symbol}</span>
-              <ChevronDownIcon className="text-muted-foreground h-4 w-4" />
+              <span className="text-sm sm:text-base">{selectedInputBase.symbol}</span>
+              <ChevronDownIcon className="text-muted-foreground h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>
@@ -370,14 +392,14 @@ export function SwapForm() {
             size="icon"
             onClick={handleSwitchTokens}
             disabled={isSwitching}
-            className="border-card bg-background hover:bg-accent h-8 w-8 rounded-full border-2 data-[state=switching]:rotate-180"
+            className="border-card bg-background hover:bg-accent h-7 w-7 rounded-full border-2 data-[state=switching]:rotate-180 sm:h-8 sm:w-8"
             data-state={isSwitching ? 'switching' : 'idle'}
           >
-            <ArrowDownIcon className="text-muted-foreground h-4 w-4" />
+            <ArrowDownIcon className="text-muted-foreground h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
         </div>
 
-        <div className="bg-background rounded-lg border p-3">
+        <div className="bg-background rounded-lg border p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-xs">You receive (estimated)</span>
             <span className="text-muted-foreground text-xs">
@@ -392,26 +414,26 @@ export function SwapForm() {
                 decimals={actualOutputDecimals}
                 disabled={true}
                 placeholder="0"
-                className="placeholder:text-muted-foreground h-10 w-full border-none bg-transparent p-0 text-2xl focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+                className="placeholder:text-muted-foreground h-10 w-full border-none bg-transparent p-0 text-xl focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 sm:text-2xl"
+                usdValue={outputUsdValue}
+                showUsdValue={true}
+                isCalculatingUsd={isLoadingAmountsOut}
               />
-              <div className="text-muted-foreground mt-1 h-4 text-xs">
-                {isLoadingAmountsOut ? 'Calculating...' : outputUsdValue}
-              </div>
             </div>
             <Button
               variant="outline"
               onClick={() => setIsSelectingOutput(true)}
-              className="bg-secondary text-secondary-foreground hover:bg-secondary/80 flex h-auto shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-medium shadow-sm"
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/80 flex h-auto shrink-0 items-center gap-1 rounded-full px-2 py-1.5 text-xs font-medium shadow-sm sm:gap-2 sm:px-3 sm:py-2 sm:text-sm"
             >
               {selectedOutputBase.logoURI && (
                 <img
                   src={selectedOutputBase.logoURI}
                   alt={selectedOutputBase.symbol}
-                  className="h-6 w-6 rounded-full"
+                  className="h-5 w-5 rounded-full sm:h-6 sm:w-6"
                 />
               )}
-              <span className="text-base">{selectedOutputBase.symbol}</span>
-              <ChevronDownIcon className="text-muted-foreground h-4 w-4" />
+              <span className="text-sm sm:text-base">{selectedOutputBase.symbol}</span>
+              <ChevronDownIcon className="text-muted-foreground h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>
@@ -443,14 +465,44 @@ export function SwapForm() {
         )}
       </CardContent>
 
-      <CardFooter className="flex flex-col gap-2 p-3 sm:p-4">
-        {formError && (
-          <div className="bg-destructive/15 text-destructive flex w-full items-center gap-2 rounded-lg p-2 text-sm">
-            <AlertCircleIcon className="h-4 w-4 shrink-0" />
-            <span className="line-clamp-2">{formError}</span>
+      <CardFooter className="flex flex-col gap-3 p-3 sm:p-4">
+        {/* Transaction Status UI */}
+        {(isSwapPending || isSwapSuccess) && (
+          <div
+            className={cn(
+              'flex w-full items-center gap-2 rounded-lg p-2 text-sm',
+              isSwapSuccess ? 'bg-green-500/15 text-green-500' : 'bg-blue-500/15 text-blue-500'
+            )}
+          >
+            {isSwapPending ? (
+              <>
+                <LoaderCircleIcon className="h-4 w-4 shrink-0 animate-spin" />
+                <span className="line-clamp-2">
+                  Transaction pending. Check your wallet for updates...
+                </span>
+              </>
+            ) : isSwapSuccess ? (
+              <>
+                <CheckCircleIcon className="h-4 w-4 shrink-0" />
+                <span className="line-clamp-2">
+                  Transaction successful! Your swap has been completed.
+                </span>
+              </>
+            ) : null}
           </div>
         )}
 
+        {/* Error Display */}
+        {(formError || isSwapError) && (
+          <div className="bg-destructive/15 text-destructive flex w-full items-center gap-2 rounded-lg p-2 text-sm">
+            <AlertCircleIcon className="h-4 w-4 shrink-0" />
+            <span className="line-clamp-2">
+              {formError || 'Transaction failed. Please try again.'}
+            </span>
+          </div>
+        )}
+
+        {/* Swap Button */}
         {!account ? (
           <Button className="w-full" disabled={!account} asChild>
             <span className="w-full">Connect Wallet</span>
@@ -461,12 +513,12 @@ export function SwapForm() {
             disabled={buttonDisabled}
             onClick={buttonAction === 'approve' ? handleApprove : handleSwap}
           >
-            {buttonDisabled && buttonAction === 'swap' ? (
+            {isSwapping ? (
               <>
                 <LoaderCircleIcon className="mr-2 h-4 w-4 animate-spin" />
                 Swapping...
               </>
-            ) : buttonDisabled && buttonAction === 'approve' ? (
+            ) : isApproving ? (
               <>
                 <LoaderCircleIcon className="mr-2 h-4 w-4 animate-spin" />
                 Approving...
