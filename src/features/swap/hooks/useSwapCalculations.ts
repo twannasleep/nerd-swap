@@ -9,6 +9,7 @@ import {
   uniswapV2RouterAbi,
 } from '../constants';
 import type { BaseToken } from '../types';
+import { SwapMode } from './useSwapState';
 
 // Mock exchange rate for USD (in a real app, fetch this from an API)
 // Consider moving this to constants or a config file
@@ -20,6 +21,8 @@ const USD_EXCHANGE_RATES = {
 interface UseSwapCalculationsProps {
   account?: `0x${string}` | undefined;
   inputAmount: string;
+  outputAmount: string;
+  swapMode: SwapMode;
   selectedInputBase: BaseToken;
   selectedOutputBase: BaseToken;
 }
@@ -27,11 +30,15 @@ interface UseSwapCalculationsProps {
 export function useSwapCalculations({
   account,
   inputAmount,
+  outputAmount,
+  swapMode,
   selectedInputBase,
   selectedOutputBase,
 }: UseSwapCalculationsProps) {
   const [debouncedInputAmount] = useDebounce(inputAmount, 500);
+  const [debouncedOutputAmount] = useDebounce(outputAmount, 500);
   const [derivedOutputAmount, setDerivedOutputAmount] = React.useState('');
+  const [derivedInputAmount, setDerivedInputAmount] = React.useState('');
   const [priceImpact, setPriceImpact] = React.useState<number | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -76,8 +83,9 @@ export function useSwapCalculations({
       : selectedOutputBase.decimals;
   }, [outputTokenDecimals, selectedOutputBase.decimals]);
 
-  // Calculate amounts out
-  const isInputAmountValid = !!debouncedInputAmount && debouncedInputAmount !== '0';
+  // Calculate based on exact input (getAmountsOut)
+  const isInputAmountValid =
+    swapMode === 'exactIn' && !!debouncedInputAmount && debouncedInputAmount !== '0';
   const parsedDebouncedInputAmount = isInputAmountValid
     ? parseUnits(debouncedInputAmount, actualInputDecimals)
     : BigInt(0);
@@ -98,29 +106,72 @@ export function useSwapCalculations({
     },
   });
 
-  // Update derived output amount when amounts out changes
+  // Calculate based on exact output (getAmountsIn)
+  const isOutputAmountValid =
+    swapMode === 'exactOut' && !!debouncedOutputAmount && debouncedOutputAmount !== '0';
+  const parsedDebouncedOutputAmount = isOutputAmountValid
+    ? parseUnits(debouncedOutputAmount, actualOutputDecimals)
+    : BigInt(0);
+
+  const { data: amountsIn, isLoading: isLoadingAmountsIn } = useReadContract({
+    address: UNISWAP_V2_ROUTER_ADDRESS as `0x${string}`,
+    abi: uniswapV2RouterAbi,
+    functionName: 'getAmountsIn' as any,
+    args: [parsedDebouncedOutputAmount, [selectedInputBase.address, selectedOutputBase.address]],
+    chainId: BNB_TESTNET_CHAIN_ID,
+    query: {
+      enabled:
+        isOutputAmountValid &&
+        !!selectedInputBase.address &&
+        !!selectedOutputBase.address &&
+        !isLoadingInputDecimals &&
+        !isLoadingOutputDecimals,
+    },
+  });
+
+  // Update derived amounts when calculations change
   React.useEffect(() => {
-    if (amountsOut?.[1] && isInputAmountValid) {
-      setDerivedOutputAmount(formatUnits(BigInt(amountsOut[1].toString()), actualOutputDecimals));
-    } else {
-      setDerivedOutputAmount('');
+    if (swapMode === 'exactIn') {
+      if (amountsOut?.[1] && isInputAmountValid) {
+        setDerivedOutputAmount(formatUnits(BigInt(amountsOut[1].toString()), actualOutputDecimals));
+        setDerivedInputAmount('');
+      } else {
+        setDerivedOutputAmount('');
+      }
+    } else if (swapMode === 'exactOut') {
+      if (amountsIn?.[0] && isOutputAmountValid) {
+        setDerivedInputAmount(formatUnits(BigInt(amountsIn[0].toString()), actualInputDecimals));
+        setDerivedOutputAmount('');
+      } else {
+        setDerivedInputAmount('');
+      }
     }
-  }, [amountsOut, actualOutputDecimals, isInputAmountValid]);
+  }, [
+    amountsOut,
+    amountsIn,
+    actualOutputDecimals,
+    actualInputDecimals,
+    isInputAmountValid,
+    isOutputAmountValid,
+    swapMode,
+  ]);
 
   // Calculate USD values
   const inputUsdValue = React.useMemo(() => {
-    if (!inputAmount) return '$0.00';
+    const amount = swapMode === 'exactIn' ? inputAmount : derivedInputAmount;
+    if (!amount) return '$0.00';
     const rate =
       USD_EXCHANGE_RATES[selectedInputBase.symbol as keyof typeof USD_EXCHANGE_RATES] || 0;
-    return `$${(parseFloat(inputAmount) * rate).toFixed(2)}`;
-  }, [inputAmount, selectedInputBase.symbol]);
+    return `$${(parseFloat(amount) * rate).toFixed(2)}`;
+  }, [inputAmount, derivedInputAmount, selectedInputBase.symbol, swapMode]);
 
   const outputUsdValue = React.useMemo(() => {
-    if (!derivedOutputAmount) return '$0.00';
+    const amount = swapMode === 'exactOut' ? outputAmount : derivedOutputAmount;
+    if (!amount) return '$0.00';
     const rate =
       USD_EXCHANGE_RATES[selectedOutputBase.symbol as keyof typeof USD_EXCHANGE_RATES] || 0;
-    return `$${(parseFloat(derivedOutputAmount) * rate).toFixed(2)}`;
-  }, [derivedOutputAmount, selectedOutputBase.symbol]);
+    return `$${(parseFloat(amount) * rate).toFixed(2)}`;
+  }, [outputAmount, derivedOutputAmount, selectedOutputBase.symbol, swapMode]);
 
   // --- Initial Rate Calculation (for 1 unit) ---
   const oneUnitInput = React.useMemo(() => {
@@ -165,44 +216,83 @@ export function useSwapCalculations({
 
   // Use derivedOutputAmount for actual swap rate if available, otherwise use initialRate
   const displayRate = React.useMemo(() => {
-    if (isInputAmountValid && derivedOutputAmount && inputAmount !== '0') {
+    if (
+      swapMode === 'exactIn' &&
+      isInputAmountValid &&
+      derivedOutputAmount &&
+      inputAmount !== '0'
+    ) {
       const inputVal = parseFloat(inputAmount);
       const outputVal = parseFloat(derivedOutputAmount);
       if (inputVal > 0 && outputVal > 0) {
         return outputVal / inputVal;
       }
+    } else if (
+      swapMode === 'exactOut' &&
+      isOutputAmountValid &&
+      derivedInputAmount &&
+      outputAmount !== '0'
+    ) {
+      const inputVal = parseFloat(derivedInputAmount);
+      const outputVal = parseFloat(outputAmount);
+      if (inputVal > 0 && outputVal > 0) {
+        return outputVal / inputVal;
+      }
     }
     return initialRate;
-  }, [isInputAmountValid, inputAmount, derivedOutputAmount, initialRate]);
+  }, [
+    isInputAmountValid,
+    isOutputAmountValid,
+    inputAmount,
+    outputAmount,
+    derivedInputAmount,
+    derivedOutputAmount,
+    initialRate,
+    swapMode,
+  ]);
 
   // Calculate price impact
   React.useEffect(() => {
-    if (inputAmount && derivedOutputAmount) {
-      const inputRate =
-        USD_EXCHANGE_RATES[selectedInputBase.symbol as keyof typeof USD_EXCHANGE_RATES] || 0;
-      const outputRate =
-        USD_EXCHANGE_RATES[selectedOutputBase.symbol as keyof typeof USD_EXCHANGE_RATES] || 0;
-      if (inputRate > 0 && outputRate > 0) {
-        const inputValueUsd = parseFloat(inputAmount) * inputRate;
-        const outputValueUsd = parseFloat(derivedOutputAmount) * outputRate;
-        if (inputValueUsd > 0) {
-          const impact = ((inputValueUsd - outputValueUsd) / inputValueUsd) * 100;
-          setPriceImpact(impact);
-        } else {
-          setPriceImpact(null);
-        }
+    if (swapMode === 'exactIn' && inputAmount && derivedOutputAmount) {
+      calculatePriceImpact(inputAmount, derivedOutputAmount);
+    } else if (swapMode === 'exactOut' && derivedInputAmount && outputAmount) {
+      calculatePriceImpact(derivedInputAmount, outputAmount);
+    } else {
+      setPriceImpact(null);
+    }
+  }, [
+    inputAmount,
+    outputAmount,
+    derivedInputAmount,
+    derivedOutputAmount,
+    selectedInputBase.symbol,
+    selectedOutputBase.symbol,
+    swapMode,
+  ]);
+
+  const calculatePriceImpact = (inputAmt: string, outputAmt: string) => {
+    const inputRate =
+      USD_EXCHANGE_RATES[selectedInputBase.symbol as keyof typeof USD_EXCHANGE_RATES] || 0;
+    const outputRate =
+      USD_EXCHANGE_RATES[selectedOutputBase.symbol as keyof typeof USD_EXCHANGE_RATES] || 0;
+    if (inputRate > 0 && outputRate > 0) {
+      const inputValueUsd = parseFloat(inputAmt) * inputRate;
+      const outputValueUsd = parseFloat(outputAmt) * outputRate;
+      if (inputValueUsd > 0) {
+        const impact = ((inputValueUsd - outputValueUsd) / inputValueUsd) * 100;
+        setPriceImpact(impact);
       } else {
         setPriceImpact(null);
       }
     } else {
       setPriceImpact(null);
     }
-  }, [inputAmount, derivedOutputAmount, selectedInputBase.symbol, selectedOutputBase.symbol]);
+  };
 
   // Loading states
   const isLoadingDecimals = isLoadingInputDecimals || isLoadingOutputDecimals;
   const isLoading =
-    isLoadingAmountsOut ||
+    (swapMode === 'exactIn' ? isLoadingAmountsOut : isLoadingAmountsIn) ||
     isLoadingDecimals ||
     isLoadingInputBalance ||
     (isLoadingInitialRate && !initialRate);
@@ -212,18 +302,29 @@ export function useSwapCalculations({
     if (!account) {
       setError('Please connect your wallet');
     } else if (
-      isInputAmountValid &&
-      !derivedOutputAmount &&
-      !isLoadingAmountsOut &&
-      !isLoadingDecimals
+      (swapMode === 'exactIn' &&
+        isInputAmountValid &&
+        !derivedOutputAmount &&
+        !isLoadingAmountsOut &&
+        !isLoadingDecimals) ||
+      (swapMode === 'exactOut' &&
+        isOutputAmountValid &&
+        !derivedInputAmount &&
+        !isLoadingAmountsIn &&
+        !isLoadingDecimals)
     ) {
       setError('Insufficient liquidity for this trade');
     } else if (
       inputBalance !== undefined &&
-      isInputAmountValid &&
       !isLoadingInputBalance &&
       !isLoadingInputDecimals &&
-      parseUnits(inputAmount, actualInputDecimals) > (inputBalance as bigint)
+      ((swapMode === 'exactIn' &&
+        isInputAmountValid &&
+        parseUnits(inputAmount, actualInputDecimals) > (inputBalance as bigint)) ||
+        (swapMode === 'exactOut' &&
+          isOutputAmountValid &&
+          derivedInputAmount &&
+          parseUnits(derivedInputAmount, actualInputDecimals) > (inputBalance as bigint)))
     ) {
       setError('Insufficient balance');
     } else {
@@ -232,13 +333,18 @@ export function useSwapCalculations({
   }, [
     account,
     inputAmount,
+    outputAmount,
     isInputAmountValid,
+    isOutputAmountValid,
     derivedOutputAmount,
+    derivedInputAmount,
     isLoadingAmountsOut,
+    isLoadingAmountsIn,
     isLoadingDecimals,
     inputBalance,
     isLoadingInputBalance,
     actualInputDecimals,
+    swapMode,
   ]);
 
   const formattedInputBalance = React.useMemo(() => {
@@ -249,6 +355,7 @@ export function useSwapCalculations({
 
   return {
     derivedOutputAmount,
+    derivedInputAmount,
     inputBalance: formattedInputBalance,
     inputBalanceBigInt: typeof inputBalance === 'bigint' ? inputBalance : undefined,
     inputUsdValue,
@@ -261,6 +368,7 @@ export function useSwapCalculations({
     error,
     isLoading,
     isLoadingAmountsOut,
+    isLoadingAmountsIn: swapMode === 'exactOut' ? isLoadingAmountsIn : false,
     isLoadingDecimals,
     isLoadingInitialRate,
   };

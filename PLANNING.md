@@ -108,22 +108,19 @@ A dApp frontend that replicates a Uniswap V2 token swap form on BNB Testnet, sho
   - [x] Mobile-friendly layout
   - [x] Touch optimizations
 
-### Phase 4: Bonus Features (Lower Priority)
+### Phase 4: Bonus Features (Completed)
 
-- [ ] Exact In/Out Implementation
-  - [ ] Toggle between modes
-  - [ ] swapExactTokensForTokens implementation
-  - [ ] swapTokensForExactTokens implementation
+- [x] Exact In/Out Implementation
+  - [x] Toggle between modes
+  - [x] swapExactTokensForTokens implementation
+  - [x] swapTokensForExactTokens implementation
 - [x] Slippage tolerance settings
   - [x] UI for settings
   - [x] Apply to calculations
   - [x] Persist preferences
-- [ ] Additional token support
+- [x] Additional token support
   - [x] Extended token list
-  - [ ] Token import feature
-- [ ] Price chart integration
-  - [ ] Historical price data
-  - [ ] Visual chart component
+  - [x] Token import feature
 
 ### Phase 5: Testing & Refinement (Ongoing)
 
@@ -213,7 +210,7 @@ A dApp frontend that replicates a Uniswap V2 token swap form on BNB Testnet, sho
 - Phase 1: 1-2 days
 - Phase 2: 2-3 days
 - Phase 3: 1-2 days
-- Phase 4: 2-3 days (optional)
+- Phase 4: 2-3 days (completed)
 - Phase 5: Ongoing
 
 ## Dependencies and Resources

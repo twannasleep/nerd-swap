@@ -38,12 +38,17 @@ export function SwapForm() {
   const {
     inputAmount,
     setInputAmount,
+    outputAmount,
+    setOutputAmount,
     selectedInputBase,
     setSelectedInputBase,
     selectedOutputBase,
     setSelectedOutputBase,
     isSwitching,
     handleSwitchTokens,
+    swapMode,
+    setSwapMode,
+    toggleSwapMode,
   } = useSwapState();
 
   const {
@@ -56,6 +61,7 @@ export function SwapForm() {
 
   const {
     derivedOutputAmount,
+    derivedInputAmount,
     inputUsdValue,
     outputUsdValue,
     displayRate,
@@ -65,10 +71,13 @@ export function SwapForm() {
     error: calculationError,
     isLoading: isLoadingCalculations,
     isLoadingAmountsOut,
+    isLoadingAmountsIn,
     isLoadingInitialRate,
   } = useSwapCalculations({
     account,
     inputAmount,
+    outputAmount,
+    swapMode,
     selectedInputBase,
     selectedOutputBase,
   });
@@ -189,7 +198,10 @@ export function SwapForm() {
   const { handleSwap, isSwapping, isSwapPending, isSwapSuccess, isSwapError } = useSwapTransaction({
     account,
     inputAmount,
+    outputAmount,
+    derivedInputAmount,
     derivedOutputAmount,
+    swapMode,
     selectedInputBase,
     selectedOutputBase,
     slippage,
@@ -295,6 +307,24 @@ export function SwapForm() {
           {calculationError && <AlertCircleIcon className="text-destructive h-4 w-4" />}
         </div>
         <div className="flex items-center gap-1">
+          <div className="mr-2 flex items-center">
+            <Button
+              variant={swapMode === 'exactIn' ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 rounded-r-none px-2"
+              onClick={() => setSwapMode('exactIn')}
+            >
+              Exact In
+            </Button>
+            <Button
+              variant={swapMode === 'exactOut' ? 'default' : 'outline'}
+              size="sm"
+              className="h-7 rounded-l-none px-2"
+              onClick={() => setSwapMode('exactOut')}
+            >
+              Exact Out
+            </Button>
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -332,16 +362,17 @@ export function SwapForm() {
           <div className="mt-2 flex items-end justify-between gap-2">
             <div className="flex-1">
               <TokenAmountInput
-                value={inputAmount}
-                onChange={setInputAmount}
+                value={swapMode === 'exactIn' ? inputAmount : derivedInputAmount}
+                onChange={swapMode === 'exactIn' ? setInputAmount : () => {}}
                 decimals={actualInputDecimals}
-                disabled={isSwapping || isSwapPending}
+                disabled={isSwapping || isSwapPending || swapMode === 'exactOut'}
                 placeholder="0"
                 className="placeholder:text-muted-foreground h-10 w-full border-none bg-transparent p-0 text-xl focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 sm:text-2xl"
                 maxValue={inputBalanceBigInt}
                 showMaxButton={
                   !isSwapping &&
                   !isSwapPending &&
+                  swapMode === 'exactIn' &&
                   !!inputBalanceBigInt &&
                   BigInt(inputBalanceBigInt) > 0
                 }
@@ -409,15 +440,15 @@ export function SwapForm() {
           <div className="mt-2 flex items-end justify-between gap-2">
             <div className="flex-1">
               <TokenAmountInput
-                value={derivedOutputAmount}
-                onChange={() => {}}
+                value={swapMode === 'exactOut' ? outputAmount : derivedOutputAmount}
+                onChange={swapMode === 'exactOut' ? setOutputAmount : () => {}}
                 decimals={actualOutputDecimals}
-                disabled={true}
+                disabled={isSwapping || isSwapPending || swapMode === 'exactIn'}
                 placeholder="0"
                 className="placeholder:text-muted-foreground h-10 w-full border-none bg-transparent p-0 text-xl focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 sm:text-2xl"
                 usdValue={outputUsdValue}
                 showUsdValue={true}
-                isCalculatingUsd={isLoadingAmountsOut}
+                isCalculatingUsd={swapMode === 'exactIn' ? isLoadingAmountsOut : isLoadingAmountsIn}
               />
             </div>
             <Button
