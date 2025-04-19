@@ -8,49 +8,49 @@ A dApp frontend that replicates a Uniswap V2 token swap form on BNB Testnet, sho
 
 ## Core Requirements Status
 
-| Requirement          | Status      | Notes                             |
-| -------------------- | ----------- | --------------------------------- |
-| Token selection      | In Progress | Basic UI components exist         |
-| Amount input         | In Progress | TokenAmountInput component exists |
-| Rate calculation     | In Progress | useSwapCalculations hook exists   |
-| Swap execution       | In Progress | Basic structure in SwapForm.tsx   |
-| Transaction feedback | In Progress | Basic toast notifications exist   |
+| Requirement          | Status    | Notes                             |
+| -------------------- | --------- | --------------------------------- |
+| Token selection      | Completed | Input and output token selection  |
+| Amount input         | Completed | TokenAmountInput fully functional |
+| Rate calculation     | Completed | useSwapCalculations implemented   |
+| Swap execution       | Completed | Full swap flow implemented        |
+| Transaction feedback | Completed | Toast notifications for all steps |
 
 ## Components Status
 
-| Component           | Status      | Description                                |
-| ------------------- | ----------- | ------------------------------------------ |
-| SwapForm            | In Progress | Main swap interface container              |
-| TokenAmountInput    | In Progress | Input field for token amounts              |
-| TokenSelectorDialog | In Progress | Modal for selecting tokens                 |
-| SlippageSettings    | In Progress | Settings for slippage tolerance            |
-| SwapButton          | Not Started | Button to execute swap transaction         |
-| PriceDisplay        | Not Started | Shows exchange rate between tokens         |
-| TransactionStatus   | Not Started | Shows status of pending transactions       |
-| ErrorDisplay        | Not Started | Displays validation and transaction errors |
-| NetworkStatus       | Completed   | Shows network connection status            |
-| ContractStatus      | Completed   | Verifies contract integration              |
+| Component           | Status    | Description                                |
+| ------------------- | --------- | ------------------------------------------ |
+| SwapForm            | Completed | Main swap interface container              |
+| TokenAmountInput    | Completed | Input field for token amounts              |
+| TokenSelectorDialog | Completed | Modal for selecting tokens                 |
+| SlippageSettings    | Completed | Settings for slippage tolerance            |
+| SwapButton          | Completed | Button to execute swap transaction         |
+| PriceDisplay        | Completed | Shows exchange rate between tokens         |
+| TransactionStatus   | Completed | Shows status of pending transactions       |
+| ErrorDisplay        | Completed | Displays validation and transaction errors |
+| NetworkStatus       | Completed | Shows network connection status            |
+| ContractStatus      | Completed | Verifies contract integration              |
 
 ## Hooks Status
 
-| Hook                | Status      | Description                       |
-| ------------------- | ----------- | --------------------------------- |
-| useSwapState        | In Progress | Manages swap form state           |
-| useSwapCalculations | In Progress | Calculates swap rates and amounts |
-| useTokenBalances    | Not Started | Fetches token balances            |
-| useTokenAllowance   | Not Started | Manages token approvals           |
-| useSwapTransaction  | Not Started | Executes swap transactions        |
+| Hook                | Status    | Description                       |
+| ------------------- | --------- | --------------------------------- |
+| useSwapState        | Completed | Manages swap form state           |
+| useSwapCalculations | Completed | Calculates swap rates and amounts |
+| useTokenBalances    | Completed | Fetches token balances            |
+| useTokenAllowance   | Completed | Manages token approvals           |
+| useSwapTransaction  | Completed | Executes swap transactions        |
 
 ## Current Development Tasks
 
 | Task                            | Assignee | Status      | Priority | Est. Completion |
 | ------------------------------- | -------- | ----------- | -------- | --------------- |
-| Verify BNB Testnet config       |          | Completed   | High     |                 |
-| Complete token balance display  |          | Not Started | High     |                 |
-| Finish swap transaction logic   |          | Not Started | High     |                 |
-| Improve TokenSelectorDialog     |          | Not Started | Medium   |                 |
-| Implement transaction status UI |          | Not Started | Medium   |                 |
-| Setup slippage settings UI      |          | Not Started | Medium   |                 |
+| Verify BNB Testnet config       |          | Completed   | High     | Completed       |
+| Complete token balance display  |          | Completed   | High     | Completed       |
+| Finish swap transaction logic   |          | Completed   | High     | Completed       |
+| Improve TokenSelectorDialog     |          | Completed   | Medium   | Completed       |
+| Implement transaction status UI |          | Completed   | Medium   | Completed       |
+| Setup slippage settings UI      |          | Completed   | Medium   | Completed       |
 | Create unit tests               |          | Not Started | Low      |                 |
 | Document components             |          | Not Started | Low      |                 |
 
@@ -74,21 +74,21 @@ A dApp frontend that replicates a Uniswap V2 token swap form on BNB Testnet, sho
 
 ### Phase 2: Swap Core Functionality (High Priority)
 
-- [ ] Token balance display
-  - [ ] BNB balance
-  - [ ] TEST63 token balance
-- [ ] Token price calculation
-  - [ ] Implement getAmountsOut
-  - [ ] Price impact calculation
-  - [ ] Price refresh mechanism
-- [ ] Swap transaction logic
-  - [ ] BNB to Token (swapExactETHForTokens)
-  - [ ] Token to BNB (swapExactTokensForETH)
-  - [ ] Token to Token (swapExactTokensForTokens)
-- [ ] Token approval flow
-  - [ ] Check allowance
-  - [ ] Request approval
-  - [ ] Approval confirmation
+- [x] Token balance display
+  - [x] BNB balance
+  - [x] TEST63 token balance
+- [x] Token price calculation
+  - [x] Implement getAmountsOut
+  - [x] Price impact calculation
+  - [x] Price refresh mechanism
+- [x] Swap transaction logic
+  - [x] BNB to Token (swapExactETHForTokens)
+  - [x] Token to BNB (swapTokensForExactETH)
+  - [x] Token to Token (swapExactTokensForTokens)
+- [x] Token approval flow
+  - [x] Check allowance
+  - [x] Request approval
+  - [x] Approval confirmation
 
 ### Phase 3: UI Enhancement (Medium Priority)
 

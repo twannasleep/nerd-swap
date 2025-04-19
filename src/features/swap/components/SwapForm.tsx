@@ -25,6 +25,8 @@ import {
 } from '../constants';
 import { useSwapCalculations } from '../hooks/useSwapCalculations';
 import { useSwapState } from '../hooks/useSwapState';
+import { useSwapTransaction } from '../hooks/useSwapTransaction';
+import { useTokenBalances } from '../hooks/useTokenBalances';
 import { BaseToken } from '../types';
 import { SlippageSettings } from './SlippageSettings';
 import { TokenAmountInput } from './TokenAmountInput';
@@ -44,9 +46,15 @@ export function SwapForm() {
   } = useSwapState();
 
   const {
+    getBalanceByToken,
+    refetchAllBalances,
+    isLoading: isLoadingBalances,
+  } = useTokenBalances({
+    account,
+  });
+
+  const {
     derivedOutputAmount,
-    inputBalance,
-    inputBalanceBigInt,
     inputUsdValue,
     outputUsdValue,
     displayRate,
@@ -64,21 +72,41 @@ export function SwapForm() {
     selectedOutputBase,
   });
 
+  // Get current token balances
+  const currentInputBalance = React.useMemo(
+    () => getBalanceByToken(selectedInputBase),
+    [getBalanceByToken, selectedInputBase]
+  );
+
+  const currentOutputBalance = React.useMemo(
+    () => getBalanceByToken(selectedOutputBase),
+    [getBalanceByToken, selectedOutputBase]
+  );
+
+  const inputBalanceBigInt = React.useMemo(() => {
+    try {
+      return BigInt(currentInputBalance.value);
+    } catch {
+      return undefined;
+    }
+  }, [currentInputBalance.value]);
+
   const [isSelectingInput, setIsSelectingInput] = React.useState(false);
   const [isSelectingOutput, setIsSelectingOutput] = React.useState(false);
   const [slippage, setSlippage] = React.useState(0.5);
   const [isSlippageDialogOpen, setIsSlippageDialogOpen] = React.useState(false);
 
-  const [isSwapPending, setIsSwapPending] = React.useState(false);
   const [lastRefreshTime, setLastRefreshTime] = React.useState<Date>(new Date());
 
   const handleRefreshPrice = React.useCallback(() => {
     setLastRefreshTime(new Date());
+    refetchAllBalances();
     const currentInput = inputAmount;
     setInputAmount(currentInput === '' ? '0' : '');
     setTimeout(() => setInputAmount(currentInput), 100);
-  }, [inputAmount, setInputAmount]);
+  }, [inputAmount, setInputAmount, refetchAllBalances]);
 
+  // Approval flow
   const { writeContract: approveToken } = useWriteContract();
   const { data: approveWriteHash, isPending: isApprovingTx } = useWriteContract();
   const {
@@ -99,6 +127,7 @@ export function SwapForm() {
     }
   }, [inputAmount, actualInputDecimals]);
 
+  // Check allowance
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: selectedInputBase?.address as `0x${string}`,
     abi: erc20Abi,
@@ -122,9 +151,13 @@ export function SwapForm() {
       allowance >= amountInBigInt
     ) {
       refetchAllowance();
+      toast.success('Token approval confirmed!', {
+        description: `You can now swap ${selectedInputBase.symbol}`,
+      });
     }
-  }, [isApprovalSuccess, allowance, amountInBigInt, refetchAllowance]);
+  }, [isApprovalSuccess, allowance, amountInBigInt, refetchAllowance, selectedInputBase.symbol]);
 
+  // Handle token approval
   const handleApprove = async () => {
     if (selectedInputBase.address === NATIVE_BNB_ADDRESS) {
       toast.error('Cannot approve native BNB');
@@ -140,7 +173,9 @@ export function SwapForm() {
         args: [UNISWAP_V2_ROUTER_ADDRESS as `0x${string}`, maxUint256],
         chainId: BNB_TESTNET_CHAIN_ID,
       });
-      toast.success('Token approval transaction sent');
+      toast.success('Token approval transaction sent', {
+        description: `Approving ${selectedInputBase.symbol} for trading...`,
+      });
     } catch (error) {
       console.error('Error approving token:', error);
       toast.error('Failed to send approval transaction', {
@@ -149,111 +184,18 @@ export function SwapForm() {
     }
   };
 
-  const {
-    data: swapWriteHash,
-    isPending: isSwapTxPending,
-    writeContractAsync: swapAsync,
-  } = useWriteContract();
-
-  const {
-    data: swapReceipt,
-    isLoading: isWaitingForSwapConfirmation,
-    isSuccess: isSwapSuccess,
-    isError: isSwapError,
-  } = useWaitForTransactionReceipt({
-    hash: swapWriteHash,
+  // Use the swap transaction hook
+  const { handleSwap, isSwapping, isSwapPending, isSwapSuccess, isSwapError } = useSwapTransaction({
+    account,
+    inputAmount,
+    derivedOutputAmount,
+    selectedInputBase,
+    selectedOutputBase,
+    slippage,
+    inputDecimals: actualInputDecimals,
+    outputDecimals: actualOutputDecimals,
+    inputBalanceBigInt,
   });
-
-  const isSwapping = isSwapTxPending || isWaitingForSwapConfirmation;
-
-  const handleSwap = async () => {
-    if (
-      !account ||
-      !inputAmount ||
-      !derivedOutputAmount ||
-      typeof slippage !== 'number' ||
-      isSwapping ||
-      !swapAsync
-    )
-      return;
-
-    const amountIn = amountInBigInt;
-    if (amountIn <= 0n) {
-      toast.error('Enter an amount to swap');
-      return;
-    }
-    if (inputBalanceBigInt !== undefined && amountIn > inputBalanceBigInt) {
-      toast.error('Insufficient balance');
-      return;
-    }
-
-    let minAmountOut: bigint;
-    try {
-      minAmountOut = parseUnits(
-        (parseFloat(derivedOutputAmount) * (1 - slippage / 100)).toFixed(actualOutputDecimals),
-        actualOutputDecimals
-      );
-      if (minAmountOut <= 0n) throw new Error('Min amount out is zero or negative');
-    } catch (calcError) {
-      console.error('Error calculating minAmountOut:', calcError);
-      toast.error('Invalid derived output amount for slippage calculation.');
-      return;
-    }
-
-    try {
-      setIsSwapPending(true);
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 20);
-
-      const inputIsNative = selectedInputBase.address === NATIVE_BNB_ADDRESS;
-      const outputIsNative = selectedOutputBase.address === NATIVE_BNB_ADDRESS;
-
-      const path = [
-        inputIsNative ? WBNB_ADDRESS : selectedInputBase.address,
-        outputIsNative ? WBNB_ADDRESS : selectedOutputBase.address,
-      ];
-
-      let txHash: `0x${string}` | undefined;
-
-      if (inputIsNative) {
-        txHash = await swapAsync({
-          address: UNISWAP_V2_ROUTER_ADDRESS,
-          abi: uniswapV2RouterAbi,
-          functionName: 'swapExactETHForTokens',
-          args: [minAmountOut, path, account, deadline],
-          value: amountIn,
-          chainId: BNB_TESTNET_CHAIN_ID,
-        });
-      } else if (outputIsNative) {
-        txHash = await swapAsync({
-          address: UNISWAP_V2_ROUTER_ADDRESS,
-          abi: uniswapV2RouterAbi,
-          functionName: 'swapTokensForExactETH',
-          args: [amountIn, minAmountOut, path, account, deadline],
-          chainId: BNB_TESTNET_CHAIN_ID,
-        });
-      } else {
-        txHash = await swapAsync({
-          address: UNISWAP_V2_ROUTER_ADDRESS as `0x${string}`,
-          abi: uniswapV2RouterAbi,
-          functionName: 'swapExactTokensForTokens',
-          args: [amountIn, minAmountOut, path, account, deadline],
-          chainId: BNB_TESTNET_CHAIN_ID,
-        });
-      }
-
-      if (txHash) {
-        toast.success('Swap transaction sent');
-        setInputAmount('');
-      } else {
-        toast.error('Swap initiation failed');
-      }
-    } catch (error) {
-      console.error('Swap error:', error);
-      toast.error('Failed to execute swap', { description: (error as Error)?.message });
-    } finally {
-      setIsSwapPending(false);
-    }
-  };
 
   const handleSelectToken = (token: BaseToken, type: 'input' | 'output') => {
     if (type === 'input') {
@@ -270,10 +212,11 @@ export function SwapForm() {
       setIsSelectingOutput(false);
     }
     setInputAmount('');
+    refetchAllBalances(); // Refresh balances when tokens change
   };
 
   const formError = calculationError;
-  const isLoading = isLoadingCalculations || isLoadingInitialRate;
+  const isLoading = isLoadingCalculations || isLoadingInitialRate || isLoadingBalances;
 
   const isInputTokenNative = selectedInputBase.address === NATIVE_BNB_ADDRESS;
   const requiresApproval = React.useMemo(() => {
@@ -331,14 +274,17 @@ export function SwapForm() {
     }
   }
 
+  // Show toast on successful swap
   React.useEffect(() => {
     if (isSwapSuccess) {
       toast.success('Swap confirmed successfully!');
       handleRefreshPrice();
+      refetchAllBalances(); // Refresh balances after successful swap
+      setInputAmount(''); // Clear input after successful swap
     } else if (isSwapError) {
       toast.error('Swap transaction failed');
     }
-  }, [isSwapSuccess, isSwapError, handleRefreshPrice]);
+  }, [isSwapSuccess, isSwapError, handleRefreshPrice, refetchAllBalances, setInputAmount]);
 
   return (
     <Card className="bg-card text-card-foreground w-full max-w-md rounded-xl border shadow-lg">
@@ -379,13 +325,13 @@ export function SwapForm() {
             <button
               className="text-muted-foreground hover:text-foreground text-xs disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => {
-                if (inputBalanceBigInt !== undefined) {
-                  setInputAmount(formatUnits(inputBalanceBigInt, actualInputDecimals));
+                if (currentInputBalance.formatted !== '0') {
+                  setInputAmount(currentInputBalance.formatted);
                 }
               }}
-              disabled={inputBalanceBigInt === undefined || !account}
+              disabled={currentInputBalance.formatted === '0' || !account}
             >
-              Balance: {inputBalance}
+              Balance: {currentInputBalance.formatted}
             </button>
           </div>
           <div className="mt-2 flex items-end justify-between gap-2">
@@ -434,6 +380,9 @@ export function SwapForm() {
         <div className="bg-background rounded-lg border p-3">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-xs">You receive (estimated)</span>
+            <span className="text-muted-foreground text-xs">
+              Balance: {currentOutputBalance.formatted}
+            </span>
           </div>
           <div className="mt-2 flex items-end justify-between gap-2">
             <div className="flex-1">
@@ -446,11 +395,7 @@ export function SwapForm() {
                 className="placeholder:text-muted-foreground h-10 w-full border-none bg-transparent p-0 text-2xl focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
               />
               <div className="text-muted-foreground mt-1 h-4 text-xs">
-                {isLoadingAmountsOut ? (
-                  <span className="italic">Fetching amount...</span>
-                ) : (
-                  outputUsdValue
-                )}
+                {isLoadingAmountsOut ? 'Calculating...' : outputUsdValue}
               </div>
             </div>
             <Button
@@ -471,75 +416,81 @@ export function SwapForm() {
           </div>
         </div>
 
-        {(displayRate || priceImpact !== null) && (
-          <div className="text-muted-foreground flex h-6 items-center justify-between px-1 pt-2 text-xs">
-            {displayRate ? (
-              <span>{`1 ${selectedInputBase.symbol} ≈ ${displayRate.toFixed(4)} ${selectedOutputBase.symbol}`}</span>
-            ) : isLoading ? (
-              <span className="italic">Loading rate...</span>
-            ) : (
-              <span>&nbsp;</span>
-            )}
+        {displayRate && (
+          <div className="text-muted-foreground flex items-center justify-between px-2 text-xs">
+            <span>Rate</span>
+            <span>
+              1 {selectedInputBase.symbol} = {displayRate.toFixed(6)} {selectedOutputBase.symbol}
+            </span>
+          </div>
+        )}
 
-            {priceImpact !== null && (
-              <span
-                className={cn(
-                  'flex items-center gap-1',
-                  Math.abs(priceImpact) > 5
-                    ? 'text-destructive'
-                    : Math.abs(priceImpact) > 2
-                      ? 'text-warning-foreground'
-                      : 'text-success-foreground'
-                )}
-                title="Price Impact"
-              >
-                {Math.abs(priceImpact) > 0.01 && <AlertCircleIcon className="h-3 w-3" />}
-                {priceImpact.toFixed(2)}%
-              </span>
-            )}
+        {priceImpact !== null && (
+          <div className="flex items-center justify-between px-2 text-xs">
+            <span className="text-muted-foreground">Price Impact</span>
+            <span
+              className={cn(
+                priceImpact < 1
+                  ? 'text-green-500'
+                  : priceImpact < 3
+                    ? 'text-yellow-500'
+                    : 'text-red-500'
+              )}
+            >
+              {priceImpact.toFixed(2)}%
+            </span>
           </div>
         )}
       </CardContent>
 
-      <CardFooter className="border-t p-4">
-        <Button
-          className="w-full text-lg font-semibold"
-          size="lg"
-          disabled={buttonDisabled || isApproving || isSwapping}
-          onClick={() => {
-            if (buttonAction === 'approve') {
-              handleApprove();
-            } else if (buttonAction === 'swap') {
-              handleSwap();
-            }
-          }}
-        >
-          {(isApproving || isSwapping) && (
-            <LoaderCircleIcon className="mr-2 h-4 w-4 animate-spin" />
-          )}
-          {buttonAction === 'approve' && isApproving
-            ? `Approving ${selectedInputBase.symbol}...`
-            : buttonAction === 'swap' && isSwapping
-              ? 'Processing Swap...'
-              : buttonText}
-        </Button>
+      <CardFooter className="flex flex-col gap-2 p-3 sm:p-4">
+        {formError && (
+          <div className="bg-destructive/15 text-destructive flex w-full items-center gap-2 rounded-lg p-2 text-sm">
+            <AlertCircleIcon className="h-4 w-4 shrink-0" />
+            <span className="line-clamp-2">{formError}</span>
+          </div>
+        )}
+
+        {!account ? (
+          <Button className="w-full" disabled={!account} asChild>
+            <span className="w-full">Connect Wallet</span>
+          </Button>
+        ) : (
+          <Button
+            className="w-full"
+            disabled={buttonDisabled}
+            onClick={buttonAction === 'approve' ? handleApprove : handleSwap}
+          >
+            {buttonDisabled && buttonAction === 'swap' ? (
+              <>
+                <LoaderCircleIcon className="mr-2 h-4 w-4 animate-spin" />
+                Swapping...
+              </>
+            ) : buttonDisabled && buttonAction === 'approve' ? (
+              <>
+                <LoaderCircleIcon className="mr-2 h-4 w-4 animate-spin" />
+                Approving...
+              </>
+            ) : (
+              buttonText
+            )}
+          </Button>
+        )}
       </CardFooter>
 
+      {/* Token selector dialogs */}
       <TokenSelectorDialog
         open={isSelectingInput}
         onOpenChange={setIsSelectingInput}
-        onSelectToken={(token: BaseToken) => {
-          handleSelectToken(token, 'input');
-        }}
+        onSelectToken={(token: BaseToken) => handleSelectToken(token, 'input')}
       />
       <TokenSelectorDialog
         open={isSelectingOutput}
         onOpenChange={setIsSelectingOutput}
-        onSelectToken={(token: BaseToken) => {
-          handleSelectToken(token, 'output');
-        }}
+        onSelectToken={(token: BaseToken) => handleSelectToken(token, 'output')}
       />
 
+      {/* Slippage settings dialog */}
       <SlippageSettings
         open={isSlippageDialogOpen}
         onOpenChange={setIsSlippageDialogOpen}
