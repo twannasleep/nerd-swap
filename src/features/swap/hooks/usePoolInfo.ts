@@ -95,6 +95,8 @@ export function usePoolInfo({ tokenA, tokenB }: PoolInfoProps) {
     chainId: BNB_TESTNET_CHAIN_ID,
     query: {
       enabled: !!poolAddress,
+      retry: 2, // Add retries for more robustness
+      retryDelay: 1000,
     },
   });
 
@@ -102,6 +104,13 @@ export function usePoolInfo({ tokenA, tokenB }: PoolInfoProps) {
   React.useEffect(() => {
     if (reserves && token0 && token1 && tokenA && tokenB) {
       const [reserve0, reserve1, blockTimestampLast] = reserves as [bigint, bigint, number];
+
+      // Check if the pool has sufficient liquidity
+      if (reserve0 <= 0n || reserve1 <= 0n) {
+        setError('This pool has no liquidity. You may need to add liquidity first.');
+        setPoolReserves(null);
+        return;
+      }
 
       // Determine if tokenA is token0 or token1
       const isTokenAToken0 =
@@ -128,6 +137,8 @@ export function usePoolInfo({ tokenA, tokenB }: PoolInfoProps) {
         token1: token1 as `0x${string}`,
         isTokenAToken0,
       });
+
+      setError(null);
     } else {
       setPoolReserves(null);
     }
@@ -135,6 +146,7 @@ export function usePoolInfo({ tokenA, tokenB }: PoolInfoProps) {
 
   // Function to refresh the pool data
   const refreshPool = React.useCallback(() => {
+    setError(null); // Reset error before refreshing
     refetchPair();
     if (poolAddress) {
       refetchReserves();

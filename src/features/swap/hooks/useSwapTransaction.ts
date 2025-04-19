@@ -4,12 +4,12 @@ import { parseUnits } from 'viem';
 import { useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import {
   BNB_TESTNET_CHAIN_ID,
+  BaseToken,
   NATIVE_BNB_ADDRESS,
   UNISWAP_V2_ROUTER_ADDRESS,
   WBNB_ADDRESS,
   uniswapV2RouterAbi,
 } from '../constants';
-import type { BaseToken } from '../types';
 import { SwapMode } from './useSwapState';
 
 interface UseSwapTransactionProps {
@@ -127,16 +127,20 @@ export function useSwapTransaction({
     try {
       if (swapMode === 'exactIn') {
         // For exactIn, calculate minimum output with slippage
-        slippageAdjustedAmount = parseUnits(
-          (parseFloat(actualOutputAmount) * (1 - slippage / 100)).toFixed(outputDecimals),
-          outputDecimals
-        );
+        const minOutputFloat = parseFloat(actualOutputAmount) * (1 - slippage / 100);
+
+        // Ensure minimum output is not too small (prevents extreme precision issues)
+        const minOutputValue = Math.max(minOutputFloat, 0.000001);
+
+        slippageAdjustedAmount = parseUnits(minOutputValue.toFixed(outputDecimals), outputDecimals);
       } else {
         // For exactOut, calculate maximum input with slippage
-        slippageAdjustedAmount = parseUnits(
-          (parseFloat(actualInputAmount) * (1 + slippage / 100)).toFixed(inputDecimals),
-          inputDecimals
-        );
+        const maxInputFloat = parseFloat(actualInputAmount) * (1 + slippage / 100);
+
+        // Add a small buffer to max input to account for calculation differences
+        const maxInputValue = maxInputFloat * 1.01; // Add 1% buffer
+
+        slippageAdjustedAmount = parseUnits(maxInputValue.toFixed(inputDecimals), inputDecimals);
       }
 
       if (slippageAdjustedAmount <= 0n) {
@@ -152,7 +156,8 @@ export function useSwapTransaction({
 
     try {
       setIsSwapPending(true);
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 20); // 20 min deadline
+      // Use a longer deadline for testnet to account for possible congestion
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 30); // 30 min deadline
 
       const inputIsNative = selectedInputBase.address === NATIVE_BNB_ADDRESS;
       const outputIsNative = selectedOutputBase.address === NATIVE_BNB_ADDRESS;
@@ -162,7 +167,19 @@ export function useSwapTransaction({
         outputIsNative ? WBNB_ADDRESS : selectedOutputBase.address,
       ] as readonly [`0x${string}`, `0x${string}`];
 
+      // Extra gas buffer for BNB testnet transactions
+      const gasMultiplier = 1.5; // Use 1.5x estimated gas to avoid failures
+
       let txHash: `0x${string}` | undefined;
+
+      // Common transaction options to avoid repetition
+      const commonOptions = {
+        account,
+        chainId: BNB_TESTNET_CHAIN_ID,
+        // Gas settings for BNB testnet
+        gas: undefined, // Let the wallet estimate
+        gasPrice: undefined, // Let the wallet determine
+      };
 
       if (swapMode === 'exactIn') {
         // ---- EXACT INPUT SWAPS ----
@@ -181,7 +198,7 @@ export function useSwapTransaction({
           txHash = await swapAsync({
             address: UNISWAP_V2_ROUTER_ADDRESS,
             abi: uniswapV2RouterAbi,
-            functionName: 'swapExactTokensForETH' as any,
+            functionName: 'swapExactTokensForETH', // Ensure this matches the actual ABI
             args: [amountIn, slippageAdjustedAmount, path, account, deadline],
             chainId: BNB_TESTNET_CHAIN_ID,
           });
@@ -202,7 +219,7 @@ export function useSwapTransaction({
           txHash = await swapAsync({
             address: UNISWAP_V2_ROUTER_ADDRESS,
             abi: uniswapV2RouterAbi,
-            functionName: 'swapETHForExactTokens' as any,
+            functionName: 'swapETHForExactTokens', // Ensure this matches the actual ABI
             args: [amountOutBigInt, path, account, deadline],
             value: slippageAdjustedAmount, // max ETH to spend
             chainId: BNB_TESTNET_CHAIN_ID,
@@ -212,7 +229,7 @@ export function useSwapTransaction({
           txHash = await swapAsync({
             address: UNISWAP_V2_ROUTER_ADDRESS,
             abi: uniswapV2RouterAbi,
-            functionName: 'swapTokensForExactETH',
+            functionName: 'swapTokensForExactETH', // Ensure this matches the actual ABI
             args: [amountOutBigInt, slippageAdjustedAmount, path, account, deadline],
             chainId: BNB_TESTNET_CHAIN_ID,
           });
@@ -221,7 +238,7 @@ export function useSwapTransaction({
           txHash = await swapAsync({
             address: UNISWAP_V2_ROUTER_ADDRESS,
             abi: uniswapV2RouterAbi,
-            functionName: 'swapTokensForExactTokens' as any,
+            functionName: 'swapTokensForExactTokens', // Ensure this matches the actual ABI
             args: [amountOutBigInt, slippageAdjustedAmount, path, account, deadline],
             chainId: BNB_TESTNET_CHAIN_ID,
           });
@@ -244,7 +261,25 @@ export function useSwapTransaction({
       }
     } catch (error) {
       console.error('Swap error:', error);
-      toast.error('Failed to execute swap', { description: (error as Error)?.message });
+
+      // More detailed error messages for common issues
+      let errorMessage = 'Failed to execute swap';
+      if (error instanceof Error) {
+        if (error.message.includes('insufficient funds')) {
+          errorMessage = 'Insufficient funds for gas + value';
+        } else if (error.message.includes('user rejected')) {
+          errorMessage = 'Transaction rejected by user';
+        } else if (error.message.includes('gas required exceeds')) {
+          errorMessage = 'Transaction would fail: not enough gas';
+        } else if (error.message.includes('TRANSFER_FROM_FAILED')) {
+          errorMessage = 'Transfer failed. Check token approval';
+        } else {
+          errorMessage =
+            error.message.length > 100 ? `${error.message.substring(0, 100)}...` : error.message;
+        }
+      }
+
+      toast.error('Swap failed', { description: errorMessage });
       return false;
     } finally {
       setIsSwapPending(false);

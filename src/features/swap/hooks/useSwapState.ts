@@ -1,6 +1,5 @@
 import * as React from 'react';
-import { BNB_BASE, TEST63_BASE } from '../constants';
-import type { BaseToken } from '../types';
+import { BNB_BASE, BaseToken, TEST63_BASE } from '../constants';
 
 export type SwapMode = 'exactIn' | 'exactOut';
 
