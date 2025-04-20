@@ -52,8 +52,9 @@ export function TokenAmountInput({
       return;
     }
 
-    // Validate against max value if provided
-    if (maxValue !== undefined && newValue !== '') {
+    // Only validate against max value if it's provided and greater than 0
+    // This allows input when wallet is not connected (maxValue = 0)
+    if (maxValue !== undefined && maxValue > 0 && newValue !== '') {
       try {
         const parsedValue = parseUnits(newValue, decimals);
         if (parsedValue > maxValue) {
@@ -69,18 +70,30 @@ export function TokenAmountInput({
     onChange(newValue);
   };
 
-  // Format the display value to remove trailing zeros after decimal
+  // Format the display value to preserve zeros while typing
   const displayValue = React.useMemo(() => {
     if (!value) return '';
-    if (!value.includes('.')) return value;
-    return value.replace(/\.?0+$/, '');
+
+    // If the user is typing a decimal number, preserve all digits
+    if (value.includes('.')) {
+      // Remove trailing zeros only if they come after other digits
+      // e.g., "1.0000" -> "1.0000", but "1." -> "1."
+      if (value.endsWith('.')) return value;
+
+      // Keep all zeros while typing
+      const [integer, fraction] = value.split('.');
+      if (fraction === '') return `${integer}.`;
+      return `${integer}.${fraction}`;
+    }
+
+    return value;
   }, [value]);
 
   const handleMaxClick = React.useCallback(() => {
     if (onMaxClick) {
       onMaxClick();
-    } else if (maxValue !== undefined) {
-      // If no onMaxClick handler provided but maxValue is available, use it directly
+    } else if (maxValue !== undefined && maxValue > 0) {
+      // Only use maxValue if it's greater than 0
       onChange(formatUnits(maxValue, decimals));
     }
   }, [onMaxClick, maxValue, onChange, decimals]);
@@ -96,7 +109,11 @@ export function TokenAmountInput({
           value={displayValue}
           onChange={handleChange}
           disabled={disabled}
-          className={cn('flex-1', showMaxButton && 'rounded-r-none', className)}
+          className={cn(
+            'flex-1 text-lg font-semibold',
+            showMaxButton && 'rounded-r-none',
+            className
+          )}
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -110,7 +127,7 @@ export function TokenAmountInput({
             size="sm"
             className={cn('h-full rounded-l-none', disabled && 'cursor-not-allowed opacity-50')}
             onClick={handleMaxClick}
-            disabled={disabled || !maxValue}
+            disabled={disabled || !maxValue || maxValue === BigInt(0)}
           >
             MAX
           </Button>

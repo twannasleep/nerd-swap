@@ -1,8 +1,9 @@
 'use client';
 
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
-import { type AppKitNetwork, bscTestnet, mainnet } from '@reown/appkit/networks';
+import { type AppKitNetwork, mainnet } from '@reown/appkit/networks';
 import { cookieStorage, createStorage } from '@wagmi/core';
+import { bscTestnet } from './chains';
 
 // Get projectId from https://cloud.reown.com
 export const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '';

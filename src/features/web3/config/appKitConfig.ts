@@ -1,6 +1,7 @@
 import { SolanaAdapter } from '@reown/appkit-adapter-solana';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
-import { AppKitNetwork, bscTestnet } from '@reown/appkit/networks';
+import { AppKitNetwork } from '@reown/appkit/networks';
+import { bscTestnet } from './chains';
 
 // Define the networks - focusing only on BNB Testnet for this project
 export const networks = [bscTestnet] as const satisfies [AppKitNetwork, ...AppKitNetwork[]];

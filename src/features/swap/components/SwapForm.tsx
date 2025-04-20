@@ -70,6 +70,8 @@ export function SwapForm() {
     isLoadingAmountsOut,
     isLoadingAmountsIn,
     isLoadingInitialRate,
+    formattedExchangeRate,
+    lastRateUpdate,
   } = useSwapCalculations({
     account,
     inputAmount,
@@ -364,7 +366,6 @@ export function SwapForm() {
                 decimals={actualInputDecimals}
                 disabled={isSwapping || isSwapPending || swapMode === 'exactOut'}
                 placeholder="0"
-                className="placeholder:text-muted-foreground h-10 w-full border-none bg-transparent p-0 text-xl focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 sm:text-2xl"
                 maxValue={inputBalanceBigInt}
                 showMaxButton={
                   !isSwapping &&
@@ -442,7 +443,6 @@ export function SwapForm() {
                 decimals={actualOutputDecimals}
                 disabled={isSwapping || isSwapPending || swapMode === 'exactIn'}
                 placeholder="0"
-                className="placeholder:text-muted-foreground h-10 w-full border-none bg-transparent p-0 text-xl focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 sm:text-2xl"
                 usdValue={outputUsdValue}
                 showUsdValue={true}
                 isCalculatingUsd={swapMode === 'exactIn' ? isLoadingAmountsOut : isLoadingAmountsIn}
@@ -463,6 +463,19 @@ export function SwapForm() {
               <span className="text-sm sm:text-base">{selectedOutputBase.symbol}</span>
               <ChevronDownIcon className="text-muted-foreground h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
+          </div>
+        </div>
+
+        {/* Exchange Rate Display */}
+        <div className="flex items-center justify-between px-2 text-sm">
+          <div className="text-muted-foreground flex items-center gap-2">
+            <span>{formattedExchangeRate}</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleRefreshPrice}>
+              <RefreshCwIcon className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="text-muted-foreground text-xs">
+            Last updated: {lastRateUpdate.toLocaleTimeString()}
           </div>
         </div>
 
@@ -532,12 +545,18 @@ export function SwapForm() {
 
         {/* Swap Button */}
         {!account ? (
-          <Button className="w-full" disabled={!account} asChild>
+          <Button
+            size="lg"
+            className="h-14 w-full text-lg font-semibold"
+            disabled={!account}
+            asChild
+          >
             <span className="w-full">Connect Wallet</span>
           </Button>
         ) : (
           <Button
-            className="w-full"
+            size="lg"
+            className="h-14 w-full text-lg font-semibold"
             disabled={buttonDisabled}
             onClick={buttonAction === 'approve' ? handleApprove : handleSwap}
           >

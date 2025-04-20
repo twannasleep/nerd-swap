@@ -34,22 +34,27 @@ export function useSwapCalculations({
   selectedInputBase,
   selectedOutputBase,
 }: UseSwapCalculationsProps) {
-  // Increased debounce time to reduce API calls and improve performance
-  const [debouncedInputAmount] = useDebounce(inputAmount, 1000);
-  const [debouncedOutputAmount] = useDebounce(outputAmount, 1000);
+  // Reduce debounce time for faster response
+  const [debouncedInputAmount] = useDebounce(inputAmount, 200);
+  const [debouncedOutputAmount] = useDebounce(outputAmount, 200);
   const [derivedOutputAmount, setDerivedOutputAmount] = React.useState('');
   const [derivedInputAmount, setDerivedInputAmount] = React.useState('');
   const [priceImpact, setPriceImpact] = React.useState<number | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [hasFailedSwapCalculation, setHasFailedSwapCalculation] = React.useState(false);
+  const [exchangeRate, setExchangeRate] = React.useState<number | null>(null);
+  const [lastRateUpdate, setLastRateUpdate] = React.useState<Date>(new Date());
 
-  // Contract reads for token information
+  // Contract reads for token information - only when needed
   const { data: inputTokenDecimals, isLoading: isLoadingInputDecimals } = useReadContract({
     address: selectedInputBase.address as `0x${string}`,
     abi: erc20Abi,
     functionName: 'decimals',
     chainId: BNB_TESTNET_CHAIN_ID,
-    query: { enabled: !!selectedInputBase.address },
+    query: {
+      enabled: !!selectedInputBase.address,
+      staleTime: Infinity, // Cache decimals indefinitely as they don't change
+    },
   });
 
   const { data: outputTokenDecimals, isLoading: isLoadingOutputDecimals } = useReadContract({
@@ -57,7 +62,10 @@ export function useSwapCalculations({
     abi: erc20Abi,
     functionName: 'decimals',
     chainId: BNB_TESTNET_CHAIN_ID,
-    query: { enabled: !!selectedOutputBase.address },
+    query: {
+      enabled: !!selectedOutputBase.address,
+      staleTime: Infinity, // Cache decimals indefinitely as they don't change
+    },
   });
 
   const { data: inputBalance, isLoading: isLoadingInputBalance } = useReadContract({
@@ -68,10 +76,39 @@ export function useSwapCalculations({
     chainId: BNB_TESTNET_CHAIN_ID,
     query: {
       enabled: !!selectedInputBase.address && !!account,
+      staleTime: 2000, // Cache balance for 2 seconds
     },
   });
 
-  // Get the actual token decimals
+  // Calculate rate for 1 token
+  const oneTokenUnit = React.useMemo(() => {
+    try {
+      return parseUnits('1', selectedInputBase.decimals);
+    } catch {
+      return BigInt(0);
+    }
+  }, [selectedInputBase.decimals]);
+
+  // Query for initial/current rate with optimized settings
+  const {
+    data: initialAmountsOut,
+    isLoading: isLoadingInitialRate,
+    refetch: refetchRate,
+  } = useReadContract({
+    address: UNISWAP_V2_ROUTER_ADDRESS as `0x${string}`,
+    abi: uniswapV2RouterAbi,
+    functionName: 'getAmountsOut',
+    args: [oneTokenUnit, [selectedInputBase.address, selectedOutputBase.address]],
+    chainId: BNB_TESTNET_CHAIN_ID,
+    query: {
+      enabled: oneTokenUnit > 0n && !!selectedInputBase.address && !!selectedOutputBase.address,
+      staleTime: 2000, // Cache for 2 seconds
+      retry: 1, // Reduce retry attempts
+      retryDelay: 500, // Faster retry
+    },
+  });
+
+  // Get the actual token decimals with default fallback
   const actualInputDecimals = React.useMemo(() => {
     return inputTokenDecimals !== undefined
       ? Number(inputTokenDecimals)
@@ -84,14 +121,50 @@ export function useSwapCalculations({
       : selectedOutputBase.decimals;
   }, [outputTokenDecimals, selectedOutputBase.decimals]);
 
-  // Calculate based on exact input (getAmountsOut)
-  const isInputAmountValid =
-    swapMode === 'exactIn' && !!debouncedInputAmount && debouncedInputAmount !== '0';
-  const parsedDebouncedInputAmount = isInputAmountValid
-    ? parseUnits(debouncedInputAmount, actualInputDecimals)
-    : BigInt(0);
+  // Optimize the amount validation checks
+  const isInputAmountValid = React.useMemo(() => {
+    if (swapMode !== 'exactIn' || !debouncedInputAmount) return false;
+    try {
+      const numValue = Number(debouncedInputAmount);
+      return !isNaN(numValue) && numValue > 0;
+    } catch {
+      return false;
+    }
+  }, [swapMode, debouncedInputAmount]);
 
-  // Add retry options for more robust contract calls
+  const parsedDebouncedInputAmount = React.useMemo(() => {
+    if (!isInputAmountValid) return BigInt(0);
+    try {
+      return parseUnits(debouncedInputAmount, actualInputDecimals);
+    } catch {
+      return BigInt(0);
+    }
+  }, [isInputAmountValid, debouncedInputAmount, actualInputDecimals]);
+
+  // Calculate based on exact output (getAmountsIn)
+  const isOutputAmountValid = React.useMemo(() => {
+    if (swapMode !== 'exactOut' || !debouncedOutputAmount) return false;
+
+    try {
+      // Convert to number to handle scientific notation
+      const numValue = Number(debouncedOutputAmount);
+      // Check if it's a valid number and greater than 0
+      return !isNaN(numValue) && numValue > 0;
+    } catch {
+      return false;
+    }
+  }, [swapMode, debouncedOutputAmount]);
+
+  const parsedDebouncedOutputAmount = React.useMemo(() => {
+    if (!isOutputAmountValid) return BigInt(0);
+    try {
+      return parseUnits(debouncedOutputAmount, actualOutputDecimals);
+    } catch {
+      return BigInt(0);
+    }
+  }, [isOutputAmountValid, debouncedOutputAmount, actualOutputDecimals]);
+
+  // Contract calls for swap calculations
   const {
     data: amountsOut,
     isLoading: isLoadingAmountsOut,
@@ -105,22 +178,14 @@ export function useSwapCalculations({
     query: {
       enabled:
         isInputAmountValid &&
+        parsedDebouncedInputAmount > 0n &&
         !!selectedInputBase.address &&
-        !!selectedOutputBase.address &&
-        !isLoadingInputDecimals &&
-        !isLoadingOutputDecimals,
-      // Add retry options for robustness
-      retry: 2,
-      retryDelay: 1000,
+        !!selectedOutputBase.address,
+      retry: 1,
+      retryDelay: 500,
+      staleTime: 1000, // Cache for 1 second
     },
   });
-
-  // Calculate based on exact output (getAmountsIn)
-  const isOutputAmountValid =
-    swapMode === 'exactOut' && !!debouncedOutputAmount && debouncedOutputAmount !== '0';
-  const parsedDebouncedOutputAmount = isOutputAmountValid
-    ? parseUnits(debouncedOutputAmount, actualOutputDecimals)
-    : BigInt(0);
 
   const {
     data: amountsIn,
@@ -130,20 +195,77 @@ export function useSwapCalculations({
     address: UNISWAP_V2_ROUTER_ADDRESS as `0x${string}`,
     abi: uniswapV2RouterAbi,
     functionName: 'getAmountsIn',
-    args: [parsedDebouncedOutputAmount, [selectedInputBase.address, selectedOutputBase.address]],
+    args: [parsedDebouncedOutputAmount, [selectedOutputBase.address, selectedInputBase.address]],
     chainId: BNB_TESTNET_CHAIN_ID,
     query: {
       enabled:
         isOutputAmountValid &&
+        parsedDebouncedOutputAmount > 0n &&
         !!selectedInputBase.address &&
-        !!selectedOutputBase.address &&
-        !isLoadingInputDecimals &&
-        !isLoadingOutputDecimals,
-      // Add retry options for robustness
-      retry: 2,
-      retryDelay: 1000,
+        !!selectedOutputBase.address,
+      retry: 1,
+      retryDelay: 500,
+      staleTime: 1000,
     },
   });
+
+  // Optimize loading state determination
+  const isLoading = React.useMemo(() => {
+    // Only consider essential loading states
+    const isCalculating = swapMode === 'exactIn' ? isLoadingAmountsOut : isLoadingAmountsIn;
+    const isInitializing = !exchangeRate && isLoadingInitialRate;
+
+    // Don't show loading if we have valid amounts
+    if (swapMode === 'exactIn' && derivedOutputAmount) return false;
+    if (swapMode === 'exactOut' && derivedInputAmount) return false;
+
+    return isCalculating || isInitializing;
+  }, [
+    swapMode,
+    isLoadingAmountsOut,
+    isLoadingAmountsIn,
+    exchangeRate,
+    isLoadingInitialRate,
+    derivedOutputAmount,
+    derivedInputAmount,
+  ]);
+
+  // Update exchange rate when initial amounts change
+  React.useEffect(() => {
+    if (initialAmountsOut && Array.isArray(initialAmountsOut) && initialAmountsOut[1]) {
+      try {
+        const outputAmount = formatUnits(
+          BigInt(initialAmountsOut[1].toString()),
+          actualOutputDecimals
+        );
+        const rate = parseFloat(outputAmount);
+        if (!isNaN(rate) && rate > 0) {
+          setExchangeRate(rate);
+        }
+      } catch (e) {
+        console.error('Error calculating exchange rate:', e);
+        setExchangeRate(null);
+      }
+    }
+  }, [initialAmountsOut, actualOutputDecimals]);
+
+  // Auto refresh rate every 5 seconds
+  React.useEffect(() => {
+    const intervalId = setInterval(() => {
+      refetchRate().then(() => {
+        setLastRateUpdate(new Date());
+      });
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [refetchRate]);
+
+  // Update exchange rate immediately when tokens change
+  React.useEffect(() => {
+    refetchRate().then(() => {
+      setLastRateUpdate(new Date());
+    });
+  }, [selectedInputBase.address, selectedOutputBase.address, refetchRate]);
 
   // Handle errors from contract calls
   React.useEffect(() => {
@@ -176,13 +298,21 @@ export function useSwapCalculations({
     if (swapMode === 'exactIn') {
       if (amountsOut && Array.isArray(amountsOut) && amountsOut[1] && isInputAmountValid) {
         try {
-          setDerivedOutputAmount(
-            formatUnits(BigInt(amountsOut[1].toString()), actualOutputDecimals)
+          const formattedOutput = formatUnits(
+            BigInt(amountsOut[1].toString()),
+            actualOutputDecimals
           );
-          setDerivedInputAmount('');
-          // Reset error state when calculation succeeds
-          setHasFailedSwapCalculation(false);
-          setError(null);
+          // Ensure we're not setting an invalid number
+          const numValue = Number(formattedOutput);
+          if (!isNaN(numValue) && numValue > 0) {
+            setDerivedOutputAmount(formattedOutput);
+            setDerivedInputAmount('');
+            setHasFailedSwapCalculation(false);
+            setError(null);
+          } else {
+            setDerivedOutputAmount('');
+            setError('Invalid output amount calculated');
+          }
         } catch (e) {
           console.error('Error formatting output amount:', e);
           setDerivedOutputAmount('');
@@ -236,46 +366,11 @@ export function useSwapCalculations({
     return `$${(parseFloat(amount) * rate).toFixed(2)}`;
   }, [outputAmount, derivedOutputAmount, selectedOutputBase.symbol, swapMode]);
 
-  // --- Initial Rate Calculation (for 1 unit) ---
-  const oneUnitInput = React.useMemo(() => {
-    try {
-      return parseUnits('1', actualInputDecimals);
-    } catch {
-      return BigInt(0);
-    }
-  }, [actualInputDecimals]);
-
-  const { data: initialAmountsOut, isLoading: isLoadingInitialRate } = useReadContract({
-    address: UNISWAP_V2_ROUTER_ADDRESS as `0x${string}`,
-    abi: uniswapV2RouterAbi,
-    functionName: 'getAmountsOut',
-    args: [oneUnitInput, [selectedInputBase.address, selectedOutputBase.address]],
-    chainId: BNB_TESTNET_CHAIN_ID,
-    query: {
-      enabled:
-        oneUnitInput > 0 &&
-        !!selectedInputBase.address &&
-        !!selectedOutputBase.address &&
-        !isLoadingInputDecimals &&
-        !isLoadingOutputDecimals,
-      staleTime: 60_000,
-    },
-  });
-
-  const initialRate = React.useMemo(() => {
-    if (initialAmountsOut && Array.isArray(initialAmountsOut) && initialAmountsOut[1]) {
-      try {
-        const outputForOneUnit = formatUnits(
-          BigInt(initialAmountsOut[1].toString()),
-          actualOutputDecimals
-        );
-        return parseFloat(outputForOneUnit);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  }, [initialAmountsOut, actualOutputDecimals]);
+  // Format the exchange rate display
+  const formattedExchangeRate = React.useMemo(() => {
+    if (exchangeRate === null) return 'Loading...';
+    return `1 ${selectedInputBase.symbol} = ${exchangeRate.toFixed(6)} ${selectedOutputBase.symbol}`;
+  }, [exchangeRate, selectedInputBase.symbol, selectedOutputBase.symbol]);
 
   // Use derivedOutputAmount for actual swap rate if available, otherwise use initialRate
   const displayRate = React.useMemo(() => {
@@ -302,7 +397,7 @@ export function useSwapCalculations({
         return outputVal / inputVal;
       }
     }
-    return initialRate;
+    return exchangeRate;
   }, [
     isInputAmountValid,
     isOutputAmountValid,
@@ -310,7 +405,7 @@ export function useSwapCalculations({
     outputAmount,
     derivedInputAmount,
     derivedOutputAmount,
-    initialRate,
+    exchangeRate,
     swapMode,
   ]);
 
@@ -355,14 +450,6 @@ export function useSwapCalculations({
     calculatePriceImpact,
   ]);
 
-  // Loading states
-  const isLoadingDecimals = isLoadingInputDecimals || isLoadingOutputDecimals;
-  const isLoading =
-    (swapMode === 'exactIn' ? isLoadingAmountsOut : isLoadingAmountsIn) ||
-    isLoadingDecimals ||
-    isLoadingInputBalance ||
-    (isLoadingInitialRate && !initialRate);
-
   // Error handling
   React.useEffect(() => {
     if (!account) {
@@ -373,18 +460,17 @@ export function useSwapCalculations({
         isInputAmountValid &&
         !derivedOutputAmount &&
         !isLoadingAmountsOut &&
-        !isLoadingDecimals) ||
+        !isLoadingInputDecimals) ||
       (swapMode === 'exactOut' &&
         isOutputAmountValid &&
         !derivedInputAmount &&
         !isLoadingAmountsIn &&
-        !isLoadingDecimals)
+        !isLoadingOutputDecimals)
     ) {
       setError('Insufficient liquidity for this trade');
     } else if (
       account && // Only check balance if wallet is connected
       inputBalance !== undefined &&
-      !isLoadingInputBalance &&
       !isLoadingInputDecimals &&
       ((swapMode === 'exactIn' &&
         isInputAmountValid &&
@@ -408,20 +494,18 @@ export function useSwapCalculations({
     derivedInputAmount,
     isLoadingAmountsOut,
     isLoadingAmountsIn,
-    isLoadingDecimals,
-    inputBalance,
-    isLoadingInputBalance,
-    actualInputDecimals,
     isLoadingInputDecimals,
+    isLoadingOutputDecimals,
+    inputBalance,
+    actualInputDecimals,
     swapMode,
   ]);
 
   const formattedInputBalance = React.useMemo(() => {
     if (!account) return '0.0000'; // Return 0 when wallet not connected
-    if (typeof inputBalance !== 'bigint' || isLoadingInputBalance || isLoadingInputDecimals)
-      return '...';
+    if (typeof inputBalance !== 'bigint' || isLoadingInputDecimals) return '...';
     return parseFloat(formatUnits(inputBalance, actualInputDecimals)).toFixed(4);
-  }, [account, inputBalance, isLoadingInputBalance, isLoadingInputDecimals, actualInputDecimals]);
+  }, [account, inputBalance, isLoadingInputDecimals, actualInputDecimals]);
 
   return {
     derivedOutputAmount,
@@ -431,15 +515,17 @@ export function useSwapCalculations({
     inputUsdValue,
     outputUsdValue,
     displayRate,
-    initialRate,
+    exchangeRate,
     priceImpact,
     actualInputDecimals,
     actualOutputDecimals,
     error,
     isLoading,
-    isLoadingAmountsOut,
-    isLoadingAmountsIn: swapMode === 'exactOut' ? isLoadingAmountsIn : false,
-    isLoadingDecimals,
-    isLoadingInitialRate,
+    isLoadingAmountsOut: isLoadingAmountsOut && !derivedOutputAmount,
+    isLoadingAmountsIn: swapMode === 'exactOut' ? isLoadingAmountsIn && !derivedInputAmount : false,
+    isLoadingDecimals: false, // We don't need to show this loading state
+    isLoadingInitialRate: isLoadingInitialRate && !exchangeRate,
+    formattedExchangeRate,
+    lastRateUpdate,
   };
 }

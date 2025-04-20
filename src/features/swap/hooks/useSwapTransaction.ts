@@ -167,19 +167,7 @@ export function useSwapTransaction({
         outputIsNative ? WBNB_ADDRESS : selectedOutputBase.address,
       ] as readonly [`0x${string}`, `0x${string}`];
 
-      // Extra gas buffer for BNB testnet transactions
-      const gasMultiplier = 1.5; // Use 1.5x estimated gas to avoid failures
-
       let txHash: `0x${string}` | undefined;
-
-      // Common transaction options to avoid repetition
-      const commonOptions = {
-        account,
-        chainId: BNB_TESTNET_CHAIN_ID,
-        // Gas settings for BNB testnet
-        gas: undefined, // Let the wallet estimate
-        gasPrice: undefined, // Let the wallet determine
-      };
 
       if (swapMode === 'exactIn') {
         // ---- EXACT INPUT SWAPS ----
